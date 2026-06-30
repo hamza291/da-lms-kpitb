@@ -132,15 +132,15 @@
 
   /* FULLSCREEN TEST MODAL */
   .test-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:var(--bg); z-index:300; display:none; flex-direction:column; padding:40px; overflow-y:auto; }
-  .test-modal-header { display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:20px; margin-bottom:40px; }
+  .test-modal-header { display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:20px; margin-bottom:30px; }
   .test-modal-header h2 { font-size:20px; font-weight:800; color:#fff; }
-  .timer-box { font-family:'JetBrains Mono',monospace; font-size:16px; font-weight:700; color:var(--warning); background:rgba(251,146,60,0.06); padding:8px 16px; border:1px solid rgba(251,146,60,0.2); border-radius:8px; }
+  .timer-box { font-family:'JetBrains Mono',monospace; font-size:16px; font-weight:700; color:var(--warning); background:rgba(251,146,60,0.06); padding:8px 16px; border:1px solid rgba(251,146,60,0.2); border-radius:8px; transition:color 0.3s; }
   .test-container { max-width:640px; width:100%; margin:0 auto; flex:1; display:flex; flex-direction:column; justify-content:center; }
   .test-q-num { font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
   .test-q-text { font-size:18px; font-weight:600; color:#fff; line-height:1.5; margin-bottom:24px; }
   .test-options { display:flex; flex-direction:column; gap:12px; margin-bottom:40px; }
   .test-option-btn { width:100%; text-align:left; background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:10px; padding:16px 20px; color:var(--text); font-size:14px; font-weight:500; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; gap:12px; }
-  .test-option-btn:hover { background:rgba(255,255,255,0.04); border-color:rgba(255,255,255,0.15); }
+  .test-option-btn:hover { background:rgba(255,255,255,0.04); border-color:rgba(255,255,255,0.15); transform:scale(1.01); }
   .test-option-btn.selected { background:rgba(56,189,248,0.08); border-color:var(--primary); color:#fff; }
   .test-option-label { font-weight:700; color:var(--primary); }
   
@@ -148,6 +148,12 @@
   .btn-nav { background:rgba(255,255,255,0.05); color:var(--text); border:none; padding:10px 20px; border-radius:8px; font-weight:600; font-size:13px; cursor:pointer; }
   .btn-nav:hover { background:rgba(255,255,255,0.1); }
   .btn-nav:disabled { opacity:0.3; cursor:not-allowed; }
+
+  /* TIMER PULSE ANIMATION */
+  @keyframes timerPulse {
+    from { transform: scale(1); opacity: 1; text-shadow: 0 0 4px rgba(248,113,113,0.2); }
+    to { transform: scale(1.08); opacity: 0.8; text-shadow: 0 0 12px rgba(248,113,113,0.6); }
+  }
 
   /* DASHBOARD WELCOME */
   .welcome-card { background:linear-gradient(135deg, rgba(56,189,248,0.1), rgba(167,139,250,0.06)); border:1px solid rgba(56,189,248,0.25); border-radius:16px; padding:32px; margin-bottom:24px; }
@@ -976,7 +982,7 @@ dept_avg = df.groupby("Dept")["Salary"].mean()
     }
   });
 
-  // ── TEST ENGINE (FULLSCREEN INTERACTIVE MODAL WITH LOCALSTORAGE RESILIENCY) ──
+  // ── TEST ENGINE (ENHANCED UX INTERACTIVE ENGINE) ──
   let quizQuestions = [];
   let userAnswers = {};
   let currentQIdx = 0;
@@ -1005,14 +1011,12 @@ dept_avg = df.groupby("Dept")["Salary"].mean()
       return;
     }
 
-    // Init Quiz variables
     testWeek = weekNum;
     quizQuestions = qs;
     userAnswers = {};
     currentQIdx = 0;
     timeRemainingSeconds = windowInfo.duration_min * 60;
 
-    // Save initial state to LocalStorage
     localStorage.setItem('active_quiz_week', weekNum);
     localStorage.setItem(`quiz_answers_wk_${weekNum}`, JSON.stringify(userAnswers));
     localStorage.setItem(`quiz_time_wk_${weekNum}`, timeRemainingSeconds);
@@ -1041,6 +1045,10 @@ dept_avg = df.groupby("Dept")["Salary"].mean()
     document.getElementById('modal-test-title').textContent = `Week ${testWeek} Test — ${testTitle}`;
     document.getElementById('testOverlay').style.display = 'flex';
     document.body.style.overflow = 'hidden'; 
+    
+    // Bind keyboard event listeners for navigation & selection shortcuts
+    window.addEventListener('keydown', handleTestKeydowns);
+
     startTimer();
     renderQuestion();
   }
@@ -1054,8 +1062,16 @@ dept_avg = df.groupby("Dept")["Salary"].mean()
       const secs = (timeRemainingSeconds % 60).toString().padStart(2, '0');
       display.textContent = `${mins}:${secs}`;
 
-      // Save time backup
       localStorage.setItem(`quiz_time_wk_${testWeek}`, timeRemainingSeconds);
+
+      // Warning when timer is below 5 minutes (300 seconds)
+      if (timeRemainingSeconds < 300) {
+        display.style.color = 'var(--danger)';
+        display.style.animation = 'timerPulse 1s infinite alternate';
+      } else {
+        display.style.color = 'var(--warning)';
+        display.style.animation = 'none';
+      }
 
       if (timeRemainingSeconds <= 0) {
         clearInterval(timerInterval);
@@ -1072,12 +1088,13 @@ dept_avg = df.groupby("Dept")["Salary"].mean()
     const q = quizQuestions[currentQIdx];
     const totalQ = quizQuestions.length;
 
-    // Backup current idx
     localStorage.setItem(`quiz_qidx_wk_${testWeek}`, currentQIdx);
 
     container.innerHTML = `
       <div class="test-q-num">Question ${currentQIdx + 1} of ${totalQ}</div>
       <div class="test-q-text">${q.question_text}</div>
+      
+      <!-- Option buttons -->
       <div class="test-options">
         <button class="test-option-btn ${userAnswers[q.id] === 'A' ? 'selected' : ''}" onclick="selectOption('${q.id}', 'A')">
           <span class="test-option-label">A</span> ${q.option_a}
@@ -1092,6 +1109,30 @@ dept_avg = df.groupby("Dept")["Salary"].mean()
           <span class="test-option-label">D</span> ${q.option_d}
         </button>
       </div>
+
+      <!-- Question Grid Navigator -->
+      <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1px;text-align:center;margin-top:10px">Jump to Question</div>
+      <div class="q-grid-nav" style="display:flex;gap:6px;margin:8px 0 24px;flex-wrap:wrap;justify-content:center">
+        ${quizQuestions.map((ques, idx) => {
+          const isCurrent = idx === currentQIdx;
+          const isAnswered = !!userAnswers[ques.id];
+          let bg = 'rgba(255,255,255,0.02)';
+          let border = '1px solid var(--border)';
+          let color = 'var(--muted)';
+          if (isAnswered) {
+            bg = 'rgba(52,211,153,0.1)';
+            border = '1px solid var(--success)';
+            color = 'var(--success)';
+          }
+          if (isCurrent) {
+            border = '2px solid var(--primary)';
+            color = '#fff';
+            bg = 'rgba(56,189,248,0.1)';
+          }
+          return `<button onclick="jumpToQ(${idx})" style="width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:${bg};border:${border};color:${color};cursor:pointer;transition:all 0.15s">${idx + 1}</button>`;
+        }).join('')}
+      </div>
+
       <div class="test-footer">
         <button class="btn-nav" id="btnPrev" onclick="navigateQ(-1)" ${currentQIdx === 0 ? 'disabled' : ''}>Previous</button>
         <button class="btn-nav" id="btnNext" onclick="navigateQ(1)">
@@ -1101,12 +1142,14 @@ dept_avg = df.groupby("Dept")["Salary"].mean()
     `;
   }
 
+  function jumpToQ(idx) {
+    currentQIdx = idx;
+    renderQuestion();
+  }
+
   function selectOption(qId, optionLetter) {
     userAnswers[qId] = optionLetter;
-    
-    // Backup answers state
     localStorage.setItem(`quiz_answers_wk_${testWeek}`, JSON.stringify(userAnswers));
-    
     renderQuestion();
 
     if (currentQIdx < quizQuestions.length - 1) {
@@ -1118,36 +1161,55 @@ dept_avg = df.groupby("Dept")["Salary"].mean()
 
   function navigateQ(direction) {
     const totalQ = quizQuestions.length;
-    
     if (direction === 1 && currentQIdx === totalQ - 1) {
       renderReviewScreen();
       return;
     }
-
     currentQIdx = Math.max(0, Math.min(totalQ - 1, currentQIdx + direction));
     renderQuestion();
+  }
+
+  // Keyboard Shortcuts Handler
+  function handleTestKeydowns(e) {
+    const activeModal = document.getElementById('testOverlay').style.display === 'flex';
+    if (!activeModal) return;
+
+    const q = quizQuestions[currentQIdx];
+    if (!q) return;
+
+    // Shortcuts: numeric or letter options
+    if (e.key === '1' || e.key.toLowerCase() === 'a') selectOption(q.id, 'A');
+    if (e.key === '2' || e.key.toLowerCase() === 'b') selectOption(q.id, 'B');
+    if (e.key === '3' || e.key.toLowerCase() === 'c') selectOption(q.id, 'C');
+    if (e.key === '4' || e.key.toLowerCase() === 'd') selectOption(q.id, 'D');
+
+    // Navigation: Arrows
+    if (e.key === 'ArrowLeft' && currentQIdx > 0) navigateQ(-1);
+    if (e.key === 'ArrowRight') navigateQ(1);
   }
 
   function renderReviewScreen() {
     const container = document.getElementById('testContainer');
     container.innerHTML = `
-      <h3 style="font-size:18px;color:#fff;margin-bottom:16px">Review Your Answers</h3>
-      <p style="color:var(--muted);font-size:13px;margin-bottom:24px">Make sure you have answered all questions. Unanswered questions count as incorrect.</p>
-      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:32px">
+      <h3 style="font-size:18px;color:#fff;margin-bottom:12px;text-align:center">Review Your Submissions</h3>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:24px;text-align:center">Ensure all questions are answered before submitting. Unsubmitted questions are graded as 0.</p>
+      
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:30px">
         ${quizQuestions.map((q, idx) => {
           const ans = userAnswers[q.id];
           return `
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;border:1px solid var(--border);border-radius:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;border:1px solid ${ans ? 'var(--border)' : 'rgba(248,113,113,0.3)'};background:${ans ? 'rgba(255,255,255,0.01)' : 'rgba(248,113,113,0.04)'};border-radius:8px;cursor:pointer" onclick="jumpToQ(${idx})">
               <span style="font-size:13px;font-weight:600">Question ${idx + 1}</span>
-              <span style="font-weight:700;color:${ans ? 'var(--success)' : 'var(--danger)'}">
-                ${ans ? `Selected Option: ${ans}` : 'Unanswered'}
+              <span style="font-size:12px;font-weight:700;color:${ans ? 'var(--success)' : 'var(--danger)'}">
+                ${ans ? `Option: ${ans}` : '⚠️ Unanswered'}
               </span>
             </div>
           `;
         }).join('')}
       </div>
+      
       <div class="test-footer">
-        <button class="btn-nav" onclick="currentQIdx=0;renderQuestion()">Back to Questions</button>
+        <button class="btn-nav" onclick="currentQIdx=0;renderQuestion()">Edit Answers</button>
         <button class="btn-take-test" onclick="submitTestAnswers(false)" style="padding:12px 32px">Submit Test</button>
       </div>
     `;
@@ -1155,6 +1217,7 @@ dept_avg = df.groupby("Dept")["Salary"].mean()
 
   async function submitTestAnswers(forced = false) {
     clearInterval(timerInterval);
+    window.removeEventListener('keydown', handleTestKeydowns);
 
     let score = 0;
     let maxScore = 0;
@@ -1173,7 +1236,6 @@ dept_avg = df.groupby("Dept")["Salary"].mean()
       answers: userAnswers
     });
 
-    // Clear local storage backups
     localStorage.removeItem('active_quiz_week');
     localStorage.removeItem(`quiz_answers_wk_${testWeek}`);
     localStorage.removeItem(`quiz_time_wk_${testWeek}`);
@@ -1213,12 +1275,79 @@ dept_avg = df.groupby("Dept")["Salary"].mean()
     `;
 
     document.getElementById('timerDisplay').style.display = 'none';
+
+    // Confetti celebration
+    triggerConfetti();
+  }
+
+  // Pure Canvas Confetti particles simulation
+  function triggerConfetti() {
+    const canvas = document.createElement('canvas');
+    canvas.style.position = 'fixed';
+    canvas.style.top = '0';
+    canvas.style.left = '0';
+    canvas.style.width = '100vw';
+    canvas.style.height = '100vh';
+    canvas.style.pointerEvents = 'none';
+    canvas.style.zIndex = '400';
+    document.body.appendChild(canvas);
+
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const colors = ['#38bdf8', '#a78bfa', '#34d399', '#facc15', '#f472b6'];
+    const particles = [];
+
+    for (let i = 0; i < 150; i++) {
+      particles.push({
+        x: canvas.width / 2,
+        y: canvas.height / 2 - 50,
+        vx: (Math.random() - 0.5) * 15,
+        vy: (Math.random() - 0.7) * 15,
+        r: Math.random() * 5 + 3,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        opacity: 1
+       });
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      let active = false;
+
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.2; 
+        p.vx *= 0.98; 
+        p.opacity -= 0.01;
+
+        if (p.opacity > 0) {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = p.color;
+          ctx.globalAlpha = p.opacity;
+          ctx.fill();
+          active = true;
+        }
+      });
+
+      if (active) {
+        requestAnimationFrame(draw);
+      } else {
+        canvas.remove();
+      }
+    }
+    draw();
   }
 
   function closeTestOverlay() {
     document.getElementById('testOverlay').style.display = 'none';
     document.body.style.overflow = 'auto'; 
     document.getElementById('timerDisplay').style.display = 'block';
+    
+    // Clear keyboard event bindings
+    window.removeEventListener('keydown', handleTestKeydowns);
     
     loadDashboard();
     updateProgressTracker();

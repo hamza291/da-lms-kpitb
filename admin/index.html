@@ -186,7 +186,10 @@
 <!-- MAIN -->
 <div id="main-content">
   <header>
-    <h1 id="page-title">Dashboard Overview</h1>
+    <div style="display:flex; align-items:center; gap:16px;">
+      <h1 id="page-title">Dashboard Overview</h1>
+      <button class="btn-action" onclick="refreshActiveTab()" style="font-size:15px; color:var(--primary); border:none; background:transparent; display:flex; align-items:center; cursor:pointer;" title="Refresh Data">🔄</button>
+    </div>
     <div class="admin-info">
       <span id="admin-name">Admin User</span>
       <div class="admin-avatar">A</div>
@@ -262,6 +265,15 @@
             <tr><td colspan="6" style="text-align:center;color:var(--muted)">Loading...</td></tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- DANGER ZONE -->
+      <div class="panel-card" style="border-color:rgba(248,113,113,0.3); background:rgba(248,113,113,0.01); margin-top:40px;">
+        <h3 style="color:var(--danger)">⚠️ Danger Zone</h3>
+        <p style="font-size:12px; color:var(--muted); margin-bottom:16px;">Perform destructive actions on the system. Be extremely careful.</p>
+        <div style="display:flex; gap:12px;">
+          <button class="btn-action" onclick="wipeTestSubmissions()" style="border-color:rgba(248,113,113,0.3); color:var(--danger); font-weight:700; padding:10px 18px;">Wipe All Test Submissions</button>
+        </div>
       </div>
     </div>
 
@@ -464,6 +476,37 @@
     if (tabId === 'tests') loadTests();
   }
 
+  function refreshActiveTab() {
+    const activePane = document.querySelector('.tab-pane.active');
+    if (!activePane) return;
+    const tabId = activePane.id.replace('tab-', '');
+    
+    showToast("Refreshing database data... 🔄");
+    
+    if (tabId === 'dashboard') loadDashboard();
+    if (tabId === 'interns') loadInterns();
+    if (tabId === 'performance') loadPerformance();
+    if (tabId === 'tests') loadTests();
+    if (tabId === 'questions') loadQuestions();
+  }
+
+  async function wipeTestSubmissions() {
+    const confirmation = prompt("⚠️ WARNING: This will permanently delete ALL intern test submissions and scores from the database. This action cannot be undone.\n\nType 'RESET' below to confirm:");
+    if (confirmation !== 'RESET') {
+      showToast("Reset canceled.", "danger");
+      return;
+    }
+
+    const { error } = await _sb.from('test_results').delete().neq('week_number', 0);
+    
+    if (error) {
+      showToast(error.message, "danger");
+    } else {
+      showToast("All test submissions successfully deleted!", "success");
+      loadDashboard();
+    }
+  }
+
   function togglePassVisibility(inputId) {
     const input = document.getElementById(inputId);
     const btn = input.nextElementSibling;
@@ -578,7 +621,7 @@
 
   async function sendPasswordReset(email) {
     const { error } = await _sb.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + '/index.html' // Sends recovery token
+      redirectTo: window.location.origin + '/index.html'
     });
     if (error) {
       showToast(error.message, 'danger');
@@ -590,7 +633,7 @@
   function openCreateModal() {
     document.getElementById('new-name').value = '';
     document.getElementById('new-email').value = '';
-    document.getElementById('new-pw').value = Math.random().toString(36).slice(-8); // Random temp pw
+    document.getElementById('new-pw').value = Math.random().toString(36).slice(-8); 
     document.getElementById('new-pw').type = 'password';
     document.querySelector('#new-pw + button').textContent = 'Show';
     document.getElementById('createModal').style.display = 'flex';
