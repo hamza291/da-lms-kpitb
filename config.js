@@ -2,8 +2,8 @@
 //  STEP 1: Paste your Supabase credentials here
 //  Get them from: supabase.com → Project Settings → API
 // ─────────────────────────────────────────────
-const SUPABASE_URL  = 'YOUR_SUPABASE_URL_HERE';
-const SUPABASE_KEY  = 'YOUR_SUPABASE_ANON_KEY_HERE';
+const SUPABASE_URL  = 'https://mrkpydwmdyiwqtjikhvb.supabase.co';
+const SUPABASE_KEY  = 'sb_publishable_yABcWZTw5N3nht8NQm0wRQ_H4cZgOf0';
 const ADMIN_EMAIL   = 'hamzafarman00755@gmail.com';
 
 // ─────────────────────────────────────────────
