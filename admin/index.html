@@ -391,8 +391,8 @@
       <input type="text" id="new-name" placeholder="Muhammad Ahmed" required>
     </div>
     <div class="modal-form-group">
-      <label>Email Address</label>
-      <input type="email" id="new-email" placeholder="ahmed@example.com" required>
+      <label>Username (or Email)</label>
+      <input type="text" id="new-email" placeholder="e.g. sohail.khan or email@example.com" required>
     </div>
     <div class="modal-form-group">
       <label>Temporary Password</label>
@@ -588,11 +588,14 @@
     interns.forEach(intern => {
       const completed = results ? results.filter(r => r.intern_id === intern.id).length : 0;
       const dateStr = new Date(intern.created_at).toLocaleDateString('en-PK', { day:'2-digit', month:'short', year:'numeric' });
+      
+      const isInternal = intern.email && intern.email.endsWith('@lms.kpitb');
+      const displayEmail = isInternal ? intern.email.split('@')[0] + ' (Username)' : (intern.email || 'N/A');
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td style="font-weight:600;color:#fff">${intern.full_name}</td>
-        <td style="font-family:'JetBrains Mono',monospace">${intern.email || 'N/A'}</td>
+        <td style="font-family:'JetBrains Mono',monospace">${displayEmail}</td>
         <td>${intern.batch}</td>
         <td>${dateStr}</td>
         <td><span class="badge ${intern.is_active ? 'badge-active' : 'badge-inactive'}">${intern.is_active ? 'Active' : 'Inactive'}</span></td>
@@ -600,7 +603,7 @@
           <button class="btn-action ${intern.is_active ? 'btn-toggle-inactive' : 'btn-toggle-active'}" onclick="toggleInternStatus('${intern.id}', ${intern.is_active})">
             ${intern.is_active ? 'Deactivate' : 'Activate'}
           </button>
-          <button class="btn-action btn-reset-pw" onclick="sendPasswordReset('${intern.email}')" ${!intern.email ? 'disabled' : ''}>
+          <button class="btn-action btn-reset-pw" onclick="sendPasswordReset('${intern.email}')" ${(!intern.email || isInternal) ? 'disabled title="Cannot send reset link to a username"' : ''}>
             Reset Link
           </button>
         </td>
@@ -644,7 +647,7 @@
   }
 
   async function submitCreateIntern() {
-    const email = document.getElementById('new-email').value;
+    let email = document.getElementById('new-email').value.trim();
     const password = document.getElementById('new-pw').value;
     const name = document.getElementById('new-name').value;
     const batch = document.getElementById('new-batch').value;
@@ -657,6 +660,10 @@
     if (password.length < 6) {
       showToast('Password must be at least 6 characters long.', 'danger');
       return;
+    }
+
+    if (!email.includes('@')) {
+      email = email + '@lms.kpitb';
     }
 
     const { data, error } = await _sb.auth.signUp({

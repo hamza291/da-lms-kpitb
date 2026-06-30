@@ -216,8 +216,8 @@
 
   <form id="loginForm">
     <div class="form-group">
-      <label for="email">Email Address</label>
-      <input type="email" id="email" class="form-control" placeholder="name@example.com" required>
+      <label for="email">Username or Email</label>
+      <input type="text" id="email" class="form-control" placeholder="e.g. sohail.khan or email@example.com" required>
     </div>
     <div class="form-group">
       <label for="password">Password</label>
@@ -340,8 +340,12 @@
   const loginForm = document.getElementById('loginForm');
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const email = document.getElementById('email').value;
+    let email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
+
+    if (!email.includes('@')) {
+      email = email + '@lms.kpitb';
+    }
 
     setLoading('btnLoginSubmit', 'loginSpinner', 'loginBtnText', 'Signing In...', true);
     document.getElementById('loginError').style.display = 'none';
