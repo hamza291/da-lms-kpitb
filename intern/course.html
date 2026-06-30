@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intern Portal — DA LMS</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #060918;
+    --bg2: #0d1127;
+    --card: #0f1729;
+    --border: #1e2d4a;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --primary: #38bdf8;
+    --accent: #a78bfa;
+    --success: #34d399;
+    --warning: #fb923c;
+    --danger: #f87171;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Inter', sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; }
+
+  /* SIDEBAR */
+  #sidebar {
+    width:260px; background:var(--bg2); border-right:1px solid var(--border);
+    display:flex; flex-direction:column; position:fixed; top:0; bottom:0; left:0; z-index:100;
+  }
+  .sidebar-header { padding:24px 20px; border-bottom:1px solid var(--border); }
+  .sidebar-header h2 { font-size:15px; font-weight:800; color:#fff; letter-spacing:0.5px; }
+  .sidebar-header p { font-size:12px; color:var(--muted); margin-top:2px; }
+  .sidebar-nav { padding:14px 10px; flex:1; overflow-y:auto; }
+  .nav-label { font-size:10px; font-weight:600; letter-spacing:1px; color:var(--muted); text-transform:uppercase; padding:10px 10px 4px; }
+  .nav-item {
+    display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px;
+    cursor:pointer; font-size:13px; font-weight:500; color:var(--muted); margin-bottom:2px;
+    transition:all 0.2s; border-left:3px solid transparent;
+  }
+  .nav-item:hover { background:rgba(255,255,255,0.03); color:var(--text); }
+  .nav-item.active { background:rgba(56,189,248,0.06); color:#fff; border-left-color:var(--primary); }
+  .sidebar-footer { padding:20px; border-top:1px solid var(--border); }
+  
+  .progress-label { font-size:11px; color:var(--muted); display:flex; justify-content:space-between; margin-bottom:6px; }
+  .progress-bar-wrap { background:var(--border); border-radius:99px; height:6px; margin-bottom:14px; overflow:hidden; }
+  .progress-bar-fill { height:100%; background:linear-gradient(90deg, var(--primary), var(--accent)); width:0%; transition:width 0.5s ease; }
+
+  .btn-logout {
+    width:100%; padding:10px; background:rgba(255,255,255,0.03); border:1px solid var(--border);
+    color:var(--muted); font-size:12px; font-weight:600; border-radius:8px; cursor:pointer; transition:all 0.2s;
+  }
+  .btn-logout:hover { background:rgba(255,255,255,0.05); color:#fff; }
+
+  /* MAIN CONTENT */
+  #main-content { margin-left:260px; flex:1; display:flex; flex-direction:column; min-height:100vh; }
+  .content-body { padding:40px; max-width:1000px; width:100%; margin:0 auto; flex:1; }
+  .tab-pane { display:none; }
+  .tab-pane.active { display:block; animation:fadeIn 0.3s ease; }
+
+  @keyframes fadeIn {
+    from { opacity:0; transform:translateY(8px); }
+    to { opacity:1; transform:translateY(0); }
+  }
+
+  /* HEADERS & BADGES */
+  .phase-header { margin-bottom:32px; }
+  .phase-tag { display:inline-flex; align-items:center; padding:4px 12px; border-radius:99px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:14px; }
+  .phase-tag-p1 { background:rgba(56,189,248,0.1); color:var(--primary); border:1px solid rgba(56,189,248,0.2); }
+  .phase-tag-p2 { background:rgba(52,211,153,0.1); color:var(--success); border:1px solid rgba(52,211,153,0.2); }
+  .phase-tag-p3 { background:rgba(167,139,250,0.1); color:var(--accent); border:1px solid rgba(167,139,250,0.2); }
+  .phase-tag-p4 { background:rgba(74,222,128,0.1); color:#4ade80; border:1px solid rgba(74,222,128,0.2); }
+  .phase-tag-p5 { background:rgba(251,146,60,0.1); color:var(--warning); border:1px solid rgba(251,146,60,0.2); }
+  .phase-tag-p6 { background:rgba(250,204,21,0.1); color:#facc15; border:1px solid rgba(250,204,21,0.2); }
+  .phase-tag-p7 { background:rgba(244,114,182,0.1); color:#f472b6; border:1px solid rgba(244,114,182,0.2); }
+  .phase-tag-p8 { background:rgba(251,191,36,0.1); color:#fbbf24; border:1px solid rgba(251,191,36,0.2); }
+
+  .phase-header h2 { font-size:28px; font-weight:800; color:#fff; }
+  .phase-header p { font-size:15px; color:var(--muted); margin-top:8px; line-height:1.6; }
+  .week-indicator { display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:99px; padding:4px 12px; font-size:12px; color:var(--muted); font-weight:500; margin-bottom:12px; }
+
+  /* CARDS & LESSONS */
+  .panel-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:24px; margin-bottom:20px; }
+  .panel-card h3 { font-size:16px; font-weight:700; color:#fff; margin-bottom:16px; }
+
+  .lesson-card { background:var(--card); border:1px solid var(--border); border-radius:12px; margin-bottom:12px; overflow:hidden; }
+  .lesson-header { display:flex; align-items:center; justify-content:space-between; padding:18px 20px; cursor:pointer; }
+  .lesson-header:hover { background:rgba(255,255,255,0.01); }
+  .lesson-header-left { display:flex; align-items:center; gap:12px; }
+  .lesson-icon { font-size:18px; width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; }
+  .lesson-header h3 { font-size:14px; font-weight:600; color:#fff; margin-bottom:0; }
+  .lesson-toggle { color:var(--muted); font-size:16px; transition:transform 0.2s; }
+  .lesson-card.open .lesson-toggle { transform:rotate(180deg); }
+  .lesson-body { display:none; padding:0 20px 20px; border-top:1px solid rgba(255,255,255,0.02); }
+  .lesson-card.open .lesson-body { display:block; }
+  .lesson-body p { font-size:14px; color:var(--text); line-height:1.6; margin:16px 0 12px; }
+  
+  /* LESSON FORMATS */
+  .concept-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin:16px 0; }
+  .concept-box { background:rgba(255,255,255,0.02); border:1px solid var(--border); border-left:3px solid var(--primary); border-radius:8px; padding:14px; }
+  .concept-box h5 { font-size:13px; font-weight:700; color:#fff; margin-bottom:4px; }
+  .concept-box p { font-size:12px; color:var(--muted); line-height:1.5; }
+
+  .formula { background:#0a0f1e; border:1px solid #1e2d4a; border-radius:8px; padding:14px; font-family:'JetBrains Mono',monospace; font-size:12px; color:#93c5fd; line-height:1.6; overflow-x:auto; margin:16px 0; }
+  .formula .comment { color:#4a6180; }
+
+  table { width:100%; border-collapse:collapse; text-align:left; font-size:13px; margin:16px 0; }
+  th { background:rgba(255,255,255,0.02); padding:10px 12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; }
+  td { padding:12px; border-top:1px solid var(--border); color:var(--text); line-height:1.5; }
+
+  /* RESOURCES */
+  .resource-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:12px; margin-top:16px; }
+  .resource-card { display:flex; align-items:center; gap:12px; padding:14px; background:var(--card); border:1px solid var(--border); border-radius:12px; text-decoration:none; color:var(--text); transition:all 0.2s; }
+  .resource-card:hover { border-color:rgba(255,255,255,0.15); background:rgba(255,255,255,0.02); }
+  .resource-yt-icon { width:32px; height:32px; background:#ff0000; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+  .resource-info h4 { font-size:13px; font-weight:600; color:#fff; }
+  .resource-info p { font-size:11px; color:var(--muted); margin-top:2px; }
+
+  /* WEEKLY TEST BOX */
+  .test-status-card { display:flex; align-items:center; justify-content:space-between; padding:20px; border-radius:12px; border:1px solid var(--border); margin-top:24px; }
+  .test-status-info h4 { font-size:14px; font-weight:700; color:#fff; }
+  .test-status-info p { font-size:12px; color:var(--muted); margin-top:4px; }
+  .btn-take-test { background:var(--primary); color:#000; font-weight:700; font-size:13px; padding:10px 20px; border:none; border-radius:8px; cursor:pointer; transition:all 0.2s; }
+  .btn-take-test:hover { opacity:0.9; box-shadow:0 6px 16px rgba(56,189,248,0.2); }
+  
+  /* BADGES */
+  .badge { display:inline-flex; align-items:center; padding:4px 10px; border-radius:99px; font-size:11px; font-weight:600; }
+  .badge-gold { background:rgba(251,191,36,0.1); color:#fbbf24; border:1px solid rgba(251,191,36,0.2); }
+  .badge-green { background:rgba(52,211,153,0.1); color:var(--success); border:1px solid rgba(52,211,153,0.2); }
+  .badge-blue { background:rgba(56,189,248,0.1); color:var(--primary); border:1px solid rgba(56,189,248,0.2); }
+  .badge-orange { background:rgba(251,146,60,0.1); color:var(--warning); border:1px solid rgba(251,146,60,0.2); }
+  .badge-red { background:rgba(248,113,113,0.1); color:var(--danger); border:1px solid rgba(248,113,113,0.2); }
+
+  /* FULLSCREEN TEST MODAL */
+  .test-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:var(--bg); z-index:300; display:none; flex-direction:column; padding:40px; overflow-y:auto; }
+  .test-modal-header { display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:20px; margin-bottom:40px; }
+  .test-modal-header h2 { font-size:20px; font-weight:800; color:#fff; }
+  .timer-box { font-family:'JetBrains Mono',monospace; font-size:16px; font-weight:700; color:var(--warning); background:rgba(251,146,60,0.06); padding:8px 16px; border:1px solid rgba(251,146,60,0.2); border-radius:8px; }
+  .test-container { max-width:640px; width:100%; margin:0 auto; flex:1; display:flex; flex-direction:column; justify-content:center; }
+  .test-q-num { font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
+  .test-q-text { font-size:18px; font-weight:600; color:#fff; line-height:1.5; margin-bottom:24px; }
+  .test-options { display:flex; flex-direction:column; gap:12px; margin-bottom:40px; }
+  .test-option-btn { width:100%; text-align:left; background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:10px; padding:16px 20px; color:var(--text); font-size:14px; font-weight:500; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; gap:12px; }
+  .test-option-btn:hover { background:rgba(255,255,255,0.04); border-color:rgba(255,255,255,0.15); }
+  .test-option-btn.selected { background:rgba(56,189,248,0.08); border-color:var(--primary); color:#fff; }
+  .test-option-label { font-weight:700; color:var(--primary); }
+  
+  .test-footer { display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:20px; margin-top:40px; }
+  .btn-nav { background:rgba(255,255,255,0.05); color:var(--text); border:none; padding:10px 20px; border-radius:8px; font-weight:600; font-size:13px; cursor:pointer; }
+  .btn-nav:hover { background:rgba(255,255,255,0.1); }
+  .btn-nav:disabled { opacity:0.3; cursor:not-allowed; }
+
+  /* DASHBOARD WELCOME */
+  .welcome-card { background:linear-gradient(135deg, rgba(56,189,248,0.1), rgba(167,139,250,0.06)); border:1px solid rgba(56,189,248,0.25); border-radius:16px; padding:32px; margin-bottom:24px; }
+  .welcome-card h2 { font-size:22px; font-weight:800; color:#fff; }
+  .welcome-card p { font-size:14px; color:var(--muted); margin-top:6px; }
+
+  .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+  .stat-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:20px; }
+  .stat-card h4 { font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; }
+  .stat-card p { font-size:24px; font-weight:800; color:#fff; margin-top:6px; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside id="sidebar">
+  <div class="sidebar-header">
+    <h2>📊 DA Internship</h2>
+    <p id="intern-name">Loading...</p>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-item active" onclick="switchTab('dashboard')" id="nav-dashboard">🏠 Dashboard</div>
+    <div class="nav-label">Course Content</div>
+    <div class="nav-item" onclick="switchTab('p1')" id="nav-p1">💡 Phase 1: Foundations</div>
+    <div class="nav-item" onclick="switchTab('p2')" id="nav-p2">💼 Phase 2: Domain Knowledge</div>
+    <div class="nav-item" onclick="switchTab('p3')" id="nav-p3">📐 Phase 3: Statistics Theory</div>
+    <div class="nav-item" onclick="switchTab('p4')" id="nav-p4">📊 Phase 4: Excel & Wrangling</div>
+    <div class="nav-item" onclick="switchTab('p5')" id="nav-p5">🗄️ Phase 5: SQL Database</div>
+    <div class="nav-item" onclick="switchTab('p6')" id="nav-p6">🐍 Phase 6: Python & Pandas</div>
+    <div class="nav-item" onclick="switchTab('p7')" id="nav-p7">📈 Phase 7: Visualization</div>
+    <div class="nav-item" onclick="switchTab('p8')" id="nav-p8">🏆 Phase 8: Capstone Project</div>
+    <div class="nav-label">Performance</div>
+    <div class="nav-item" onclick="switchTab('progress')" id="nav-progress">📊 My Progress</div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="progress-label"><span>Course Progress</span><span id="sidebar-progress-pct">0%</span></div>
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" id="sidebar-progress-bar"></div></div>
+    <button class="btn-logout" onclick="internLogout()">Sign Out</button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div id="main-content">
+  <div class="content-body">
+    
+    <!-- DASHBOARD -->
+    <div class="tab-pane active" id="tab-dashboard">
+      <div class="welcome-card">
+        <h2>Welcome back! 👋</h2>
+        <p>KPITB Data Analytics Internship Program · 2026</p>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card"><h4>Tests Completed</h4><p id="stat-completed">0 / 14</p></div>
+        <div class="stat-card"><h4>Average Score</h4><p id="stat-avg">0%</p></div>
+        <div class="stat-card"><h4>Current Week</h4><p id="stat-current">Week 1</p></div>
+        <div class="stat-card"><h4>Best Score</h4><p id="stat-best">0%</p></div>
+      </div>
+
+      <div class="panel-card">
+        <h3>My Recent Test Scores</h3>
+        <table>
+          <thead>
+            <tr><th>Week</th><th>Test Topic</th><th>Score</th><th>Percentage</th><th>Grade</th></tr>
+          </thead>
+          <tbody id="recent-scores-tbody">
+            <tr><td colspan="5" style="text-align:center;color:var(--muted)">No tests taken yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="panel-card">
+        <h3>Available Weekly Tests</h3>
+        <div id="available-tests-container">
+          <p style="color:var(--muted);font-size:13px">Loading available tests...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHASE 1 -->
+    <div class="tab-pane" id="tab-p1">
+      <div class="phase-header">
+        <div class="week-badge">📅 Weeks 1–2</div>
+        <div class="phase-tag phase-tag-p1">Phase 1 · Foundations</div>
+        <h2>Foundations & Analytical Mindset</h2>
+        <p>Understand the types of data analytics, the lifecycle of data, how metrics differ from KPIs, and the principles of privacy and ethics.</p>
+      </div>
+
+      <div class="lesson-card">
+        <div class="lesson-header" onclick="toggleLesson(this)"><div class="lesson-header-left"><h3>1.1 — What is Data Analytics?</h3></div><div class="lesson-toggle">⌄</div></div>
+        <div class="lesson-body">
+          <p>Data analytics is the process of examining raw data to find patterns and answer questions. It's classified into four stages:</p>
+          <div class="concept-grid">
+            <div class="concept-box"><h5>Descriptive</h5><p>What happened?<br><em>e.g. Monthly sales report</em></p></div>
+            <div class="concept-box"><h5>Diagnostic</h5><p>Why did it happen?<br><em>e.g. Analyzing a sales drop</em></p></div>
+            <div class="concept-box"><h5>Predictive</h5><p>What will happen?<br><em>e.g. Predicting customer churn</em></p></div>
+            <div class="concept-box"><h5>Prescriptive</h5><p>What should we do?<br><em>e.g. Route optimization</em></p></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lesson-card">
+        <div class="lesson-header" onclick="toggleLesson(this)"><div class="lesson-header-left"><h3>1.2 — The Data Lifecycle</h3></div><div class="lesson-toggle">⌄</div></div>
+        <div class="lesson-body">
+          <p>Every analysis project follows these six distinct steps:</p>
+          <div class="formula">
+1. Collect     -> Gather raw database values, logs, or API responses
+2. Clean       -> Handle nulls, format fields, remove duplicates (80% of time)
+3. Explore     -> Run exploratory data analysis (EDA) to find initial trends
+4. Analyze     -> Run statistical tests, models, or aggregations
+5. Visualize   -> Build dashboards (Power BI, Seaborn) to show results
+6. Decide      -> Present findings so managers can take action
+          </div>
+        </div>
+      </div>
+
+      <div class="lesson-card">
+        <div class="lesson-header" onclick="toggleLesson(this)"><div class="lesson-header-left"><h3>1.3 — KPIs vs Metrics</h3></div><div class="lesson-toggle">⌄</div></div>
+        <div class="lesson-body">
+          <p>A metric is any number you can track. A KPI (Key Performance Indicator) is a metric directly tied to a main business goal.</p>
+          <table>
+            <thead><tr><th>SMART Property</th><th>Meaning</th></tr></thead>
+            <tbody>
+              <tr><td>Specific</td><td>Clearly defined parameter</td></tr>
+              <tr><td>Measurable</td><td>Quantified with a number</td></tr>
+              <tr><td>Achievable</td><td>Realistic goal</td></tr>
+              <tr><td>Relevant</td><td>Supports company success</td></tr>
+              <tr><td>Time-bound</td><td>Measured in a set duration (e.g. "by Q4")</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="lesson-card">
+        <div class="lesson-header" onclick="toggleLesson(this)"><div class="lesson-header-left"><h3>1.4 — Data Types (NOIR Scale)</h3></div><div class="lesson-toggle">⌄</div></div>
+        <div class="lesson-body">
+          <p>Understanding variables on the NOIR Scale:</p>
+          <table>
+            <thead><tr><th>Scale</th><th>Type</th><th>Example</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Nominal</strong></td><td>Categorical, no order</td><td>City, Color, Gender</td></tr>
+              <tr><td><strong>Ordinal</strong></td><td>Categorical with order</td><td>Customer Rating (1-5 Stars)</td></tr>
+              <tr><td><strong>Interval</strong></td><td>Numeric, equal intervals, no true zero</td><td>Temperature in Celsius</td></tr>
+              <tr><td><strong>Ratio</strong></td><td>Numeric with a true zero</td><td>Revenue, Height, Weight</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="lesson-card">
+        <div class="lesson-header" onclick="toggleLesson(this)"><div class="lesson-header-left"><h3>1.5 — Data Ethics</h3></div><div class="lesson-toggle">⌄</div></div>
+        <div class="lesson-body">
+          <p>Ethics is critical for data analysts:</p>
+          <div class="concept-grid">
+            <div class="concept-box" style="border-left-color:var(--danger)"><h5>Privacy</h5><p>Protect PII and customer identity.</p></div>
+            <div class="concept-box" style="border-left-color:var(--warning)"><h5>Consent</h5><p>Users must agree to data collection.</p></div>
+            <div class="concept-box" style="border-left-color:var(--primary)"><h5>Bias</h5><p>Biased data leads to discriminatory models.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <h3>📺 Recommended Resources</h3>
+        <div class="resource-grid">
+          <a href="https://www.youtube.com/watch?v=yZvFH7B6gKI" target="_blank" class="resource-card"><div class="resource-yt-icon">▶</div><div class="resource-info"><h4>Data Analytics Course Intro</h4><p>Alex The Analyst</p></div></a>
+          <a href="https://www.youtube.com/watch?v=yGBNUqtYoqE" target="_blank" class="resource-card"><div class="resource-yt-icon">▶</div><div class="resource-info"><h4>4 Types of Analytics</h4><p>IBM Technology</p></div></a>
+          <a href="https://www.youtube.com/watch?v=S4oJPeRZFlQ" target="_blank" class="resource-card"><div class="resource-yt-icon">▶</div><div class="resource-info"><h4>Data Ethics</h4><p>CrashCourse Statistics</p></div></a>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <h3>📝 Weekly Evaluations</h3>
+        <div id="tests-p1-container"></div>
+      </div>
+    </div>
+
+    <!-- PHASE 2 -->
+    <div class="tab-pane" id="tab-p2">
+      <div class="phase-header">
+        <div class="week-badge">📅 Weeks 3–4</div>
+        <div class="phase-tag phase-tag-p2">Phase 2 · Business Domain</div>
+        <h2>Business Domain Knowledge</h2>
+        <p>Understand the metrics, vocabulary, and objectives of key business departments: Finance, Marketing, Operations, and HR.</p>
+      </div>
+
+      <div class="lesson-card">
+        <div class="lesson-header" onclick="toggleLesson(this)"><div class="lesson-header-left"><h3>2.1 — Finance & Accounting</h3></div><div class="lesson-toggle">⌄</div></div>
+        <div class="lesson-body">
+          <p>Financial statements and core formulas:</p>
+          <div class="formula">
+Gross Profit = Revenue – COGS
+Net Income = Operating Income – Interest & Tax
+CAC = Total Marketing Spend / New Customers
+LTV = Avg Purchase Value × Frequency × Lifespan
+          </div>
+        </div>
+      </div>
+
+      <div class="lesson-card">
+        <div class="lesson-header" onclick="toggleLesson(this)"><div class="lesson-header-left"><h3>2.2 — Marketing & Operations</h3></div><div class="lesson-toggle">⌄</div></div>
+        <div class="lesson-body">
+          <p>Funnel conversion and efficiency analysis:</p>
+          <div class="formula">
+CTR = (Clicks / Impressions) × 100
+ROAS = Revenue from Ads / Ad Spend
+Inventory Turnover = COGS / Average Inventory
+Defect Rate = (Defective Units / Total Units) × 100
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <h3>📺 Recommended Resources</h3>
+        <div class="resource-grid">
+          <a href="https://www.youtube.com/watch?v=WEDIj9JBTC8" target="_blank" class="resource-card"><div class="resource-yt-icon">▶</div><div class="resource-info"><h4>Income Statement</h4><p>Accounting Stuff</p></div></a>
+          <a href="https://www.youtube.com/watch?v=yNCSBCz8CEs" target="_blank" class="resource-card"><div class="resource-yt-icon">▶</div><div class="resource-info"><h4>Marketing Funnel</h4><p>HubSpot</p></div></a>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <h3>📝 Weekly Evaluations</h3>
+        <div id="tests-p2-container"></div>
+      </div>
+    </div>
+
+    <!-- PHASE 3 -->
+    <div class="tab-pane" id="tab-p3">
+      <div class="phase-header">
+        <div class="week-badge">📅 Weeks 5–6</div>
+        <div class="phase-tag phase-tag-p3">Phase 3 · Statistics</div>
+        <h2>Statistics & Data Analysis Basics</h2>
+        <p>Learn descriptive statistics, probability theory, hypothesis testing rules, and data quality standards.</p>
+      </div>
+
+      <div class="lesson-card">
+        <div class="lesson-header" onclick="toggleLesson(this)"><div class="lesson-header-left"><h3>3.1 — Descriptive Statistics</h3></div><div class="lesson-toggle">⌄</div></div>
+        <div class="lesson-body">
+          <p>Measures of center and dispersion:</p>
+          <div class="formula">
+Mean = Sum of values / Count of values
+Median = Middle value (unsusceptible to outliers)
+IQR = Q3 - Q1 (Interquartile range)
+Outlier Fences = [Q1 - 1.5*IQR, Q3 + 1.5*IQR]
+          </div>
+        </div>
+      </div>
+
+      <div class="lesson-card">
+        <div class="lesson-header" onclick="toggleLesson(this)"><div class="lesson-header-left"><h3>3.2 — Hypothesis Testing</h3></div><div class="lesson-toggle">⌄</div></div>
+        <div class="lesson-body">
+          <p>Evaluating statistical statements:</p>
+          <div class="formula">
+H0 (Null): No difference/effect
+H1 (Alternative): There is a significant difference/effect
+p-value < 0.05 -> Reject H0 (Result is statistically significant)
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <h3>📺 Recommended Resources</h3>
+        <div class="resource-grid">
+          <a href="https://www.youtube.com/watch?v=0oc49DyA3hU" target="_blank" class="resource-card"><div class="resource-yt-icon">▶</div><div class="resource-info"><h4>Hypothesis Testing</h4><p>StatQuest</p></div></a>
+          <a href="https://www.youtube.com/watch?v=vemZtEM63GY" target="_blank" class="resource-card"><div class="resource-yt-icon">▶</div><div class="resource-info"><h4>p-values</h4><p>StatQuest</p></div></a>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <h3>📝 Weekly Evaluations</h3>
+        <div id="tests-p3-container"></div>
+      </div>
+    </div>
+
+    <!-- PHASE 4 -->
+    <div class="tab-pane" id="tab-p4">
+      <div class="phase-header">
+        <div class="week-badge">📅 Weeks 7–8</div>
+        <div class="phase-tag phase-tag-p4">Phase 4 · Excel</div>
+        <h2>Excel & Data Wrangling</h2>
+        <p>Master Excel lookup formulas, logical nesting, Pivot Tables, and the ETL process in Power Query.</p>
+      </div>
+
+      <div class="lesson-card">
+        <div class="lesson-header" onclick="toggleLesson(this)"><div class="lesson-header-left"><h3>4.1 — Excel Formulas</h3></div><div class="lesson-toggle">⌄</div></div>
+        <div class="lesson-body">
+          <p>Professional formulas and conditional logic:</p>
+          <div class="formula">
+=VLOOKUP(lookup_value, table_array, col_index, FALSE)
+=INDEX(return_range, MATCH(lookup_value, lookup_range, 0))
+=SUMIFS(sum_range, criteria_range1, criteria1, ...)
+=IFERROR(value, value_if_error)
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <h3>📝 Weekly Evaluations</h3>
+        <div id="tests-p4-container"></div>
+      </div>
+    </div>
+
+    <!-- PHASE 5 -->
+    <div class="tab-pane" id="tab-p5">
+      <div class="phase-header">
+        <div class="week-badge">📅 Weeks 9–10</div>
+        <div class="phase-tag phase-tag-p5">Phase 5 · SQL</div>
+        <h2>SQL for Analytics</h2>
+        <p>Query relational databases using SELECT, Joins, subqueries, CTEs, and window functions.</p>
+      </div>
+
+      <div class="lesson-card">
+        <div class="lesson-header" onclick="toggleLesson(this)"><div class="lesson-header-left"><h3>5.1 — Core SQL Queries</h3></div><div class="lesson-toggle">⌄</div></div>
+        <div class="lesson-body">
+          <div class="formula">
+SELECT Dept, AVG(Salary)
+FROM Employees
+WHERE HireDate > '2025-01-01'
+GROUP BY Dept
+HAVING AVG(Salary) > 60000;
+          </div>
+        </div>
+      </div>
+
+      <div class="lesson-card">
+        <div class="lesson-header" onclick="toggleLesson(this)"><div class="lesson-header-left"><h3>5.2 — Advanced SQL</h3></div><div class="lesson-toggle">⌄</div></div>
+        <div class="lesson-body">
+          <div class="formula">
+WITH SalesCTE AS (
+    SELECT EmployeeID, SUM(Amount) AS Total
+    FROM Sales GROUP BY EmployeeID
+)
+SELECT Name, Total,
+    RANK() OVER (ORDER BY Total DESC) AS SalesRank
+FROM Employees e
+JOIN SalesCTE s ON e.EmployeeID = s.EmployeeID;
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <h3>📝 Weekly Evaluations</h3>
+        <div id="tests-p5-container"></div>
+      </div>
+    </div>
+
+    <!-- PHASE 6 -->
+    <div class="tab-pane" id="tab-p6">
+      <div class="phase-header">
+        <div class="week-badge">📅 Weeks 11–12</div>
+        <div class="phase-tag phase-tag-p6">Phase 6 · Python</div>
+        <h2>Python & Pandas for Data Analysis</h2>
+        <p>Write Python scripts in Jupyter/Colab to load, inspect, clean, and aggregate data, and create visualizations.</p>
+      </div>
+
+      <div class="lesson-card">
+        <div class="lesson-header" onclick="toggleLesson(this)"><div class="lesson-header-left"><h3>6.1 — Pandas Operations</h3></div><div class="lesson-toggle">⌄</div></div>
+        <div class="lesson-body">
+          <div class="formula">
+import pandas as pd
+df = pd.read_csv("data.csv")
+df.dropna(subset=["Salary"], inplace=True)
+df["Salary"] = df["Salary"].astype(float)
+dept_avg = df.groupby("Dept")["Salary"].mean()
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <h3>📝 Weekly Evaluations</h3>
+        <div id="tests-p6-container"></div>
+      </div>
+    </div>
+
+    <!-- PHASE 7 -->
+    <div class="tab-pane" id="tab-p7">
+      <div class="phase-header">
+        <div class="week-badge">📅 Weeks 13–14</div>
+        <div class="phase-tag phase-tag-p7">Phase 7 · Visualization</div>
+        <h2>Data Visualization & Storytelling</h2>
+        <p>Learn dashboard design principles, color theory, Power BI development, and structural storytelling (SCQA).</p>
+      </div>
+
+      <div class="lesson-card">
+        <div class="lesson-header" onclick="toggleLesson(this)"><div class="lesson-header-left"><h3>7.1 — Design Principles</h3></div><div class="lesson-toggle">⌄</div></div>
+        <div class="lesson-body">
+          <div class="concept-grid">
+            <div class="concept-box"><h5>Data-Ink Ratio</h5><p>Maximize actual data indicators. Remove gridlines and borders.</p></div>
+            <div class="concept-box"><h5>5-Second Rule</h5><p>Viewers must grasp the main chart insight in 5 seconds.</p></div>
+            <div class="concept-box"><h5>Color Theory</h5><p>Avoid rainbow colors. Use one accent color + grey for neutral data.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <h3>📝 Weekly Evaluations</h3>
+        <div id="tests-p7-container"></div>
+      </div>
+    </div>
+
+    <!-- PHASE 8 -->
+    <div class="tab-pane" id="tab-p8">
+      <div class="phase-header">
+        <div class="week-badge">📅 Weeks 15–16</div>
+        <div class="phase-tag phase-tag-p8">Phase 8 · Capstone</div>
+        <h2>Capstone Project & Presentation</h2>
+        <p>Apply everything end-to-end to research, clean, analyze, visualize, and present a business problem solution.</p>
+      </div>
+
+      <div class="lesson-card">
+        <div class="lesson-header" onclick="toggleLesson(this)"><div class="lesson-header-left"><h3>8.1 — Project Steps</h3></div><div class="lesson-toggle">⌄</div></div>
+        <div class="lesson-body">
+          <p>Deliverables for the final presentation:</p>
+          <div class="formula">
+1. Define business problem & 5 analytical questions
+2. Document data cleaning choices
+3. Python/SQL EDA notebook
+4. Interactive Power BI dashboard
+5. 15-minute slide deck presentation
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <h3>📝 Weekly Evaluations</h3>
+        <div id="tests-p8-container"></div>
+      </div>
+    </div>
+
+    <!-- MY PROGRESS -->
+    <div class="tab-pane" id="tab-progress">
+      <div class="phase-header">
+        <h2>My Performance Progress</h2>
+        <p>Track your scores, grades, and completion metrics across the entire program.</p>
+      </div>
+
+      <div class="stats-grid" style="margin-bottom:32px">
+        <div class="stat-card"><h4>Overall Average</h4><p id="prog-overall-avg">0%</p></div>
+        <div class="stat-card"><h4>Completed Tests</h4><p id="prog-completed-count">0 / 14</p></div>
+        <div class="stat-card"><h4>Highest Score</h4><p id="prog-highest">0%</p></div>
+      </div>
+
+      <div class="panel-card">
+        <h3>All Test Results</h3>
+        <table>
+          <thead>
+            <tr><th>Week</th><th>Topic Title</th><th>Status</th><th>Score</th><th>Max Marks</th><th>Percentage</th><th>Grade</th></tr>
+          </thead>
+          <tbody id="progress-table-rows">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- FULLSCREEN TEST MODAL -->
+<div class="test-overlay" id="testOverlay">
+  <div class="test-modal-header">
+    <h2 id="modal-test-title">Weekly Quiz</h2>
+    <div class="timer-box" id="timerDisplay">30:00</div>
+  </div>
+  
+  <div class="test-container" id="testContainer">
+    <!-- Quiz question screen (JS populated) -->
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // ── UPDATE THESE WITH YOUR SUPABASE KEYS ──
+  const SUPABASE_URL = 'YOUR_SUPABASE_URL_HERE';
+  const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY_HERE';
+
+  let _sb = null;
+  let currentSession = null;
+  let currentProfile = null;
+
+  if (SUPABASE_URL !== 'YOUR_SUPABASE_URL_HERE') {
+    _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  }
+
+  // Auth checking
+  window.addEventListener('load', async () => {
+    if (!_sb) {
+      alert("Please configure your SUPABASE_URL and SUPABASE_KEY in intern/course.html to view the Intern Portal.");
+      return;
+    }
+    const { data: { session } } = await _sb.auth.getSession();
+    if (!session) {
+      window.location.href = '../index.html';
+      return;
+    }
+    currentSession = session;
+
+    const { data: profile, error } = await _sb.from('profiles').select('*').eq('id', session.user.id).single();
+    if (error || !profile || profile.role !== 'intern') {
+      window.location.href = '../admin/index.html';
+      return;
+    }
+    currentProfile = profile;
+
+    document.getElementById('intern-name').textContent = profile.full_name;
+
+    // Load initial portal views
+    loadDashboard();
+    updateProgressTracker();
+  });
+
+  // Navigation tabs helper
+  function switchTab(tabId) {
+    document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+
+    document.getElementById(`tab-${tabId}`).classList.add('active');
+    document.getElementById(`nav-${tabId}`).classList.add('active');
+
+    if (tabId === 'dashboard') loadDashboard();
+    if (tabId === 'progress') loadProgressTab();
+    
+    // For Phase tabs, load their specific week test statuses
+    const phaseMappings = { p1: [1, 2], p2: [3, 4], p3: [5, 6], p4: [7, 8], p5: [9, 10], p6: [11, 12], p7: [13, 14], p8: [15, 16] };
+    if (phaseMappings[tabId]) {
+      loadPhaseTests(tabId, phaseMappings[tabId]);
+    }
+    
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+
+  function toggleLesson(header) {
+    header.parentElement.classList.toggle('open');
+  }
+
+  function getGrade(pct) {
+    if (pct >= 85) return { label: 'A', class: 'badge-gold' };
+    if (pct >= 70) return { label: 'B', class: 'badge-green' };
+    if (pct >= 60) return { label: 'C', class: 'badge-blue' };
+    if (pct >= 50) return { label: 'D', class: 'badge-orange' };
+    return { label: 'F', class: 'badge-red' };
+  }
+
+  // ── LOAD PORTAL PROGRESS TRACKER ──
+  async function updateProgressTracker() {
+    const { data: results } = await _sb.from('test_results').select('*').eq('intern_id', currentSession.user.id);
+    const count = results ? results.length : 0;
+    const total = 14; // Auto-graded weeks (1-14)
+    const pct = Math.min(100, Math.round((count / total) * 100));
+
+    document.getElementById('sidebar-progress-pct').textContent = `${pct}%`;
+    document.getElementById('sidebar-progress-bar').style.width = `${pct}%`;
+  }
+
+  // ── TAB: DASHBOARD ──
+  async function loadDashboard() {
+    const { data: results } = await _sb.from('test_results').select('*').eq('intern_id', currentSession.user.id);
+    const { data: windows } = await _sb.from('test_windows').select('*').order('week_number', { ascending: true });
+
+    const completed = results ? results.length : 0;
+    document.getElementById('stat-completed').textContent = `${completed} / 14`;
+
+    // Average Score
+    let avg = 0;
+    let best = 0;
+    if (results && results.length > 0) {
+      const sum = results.reduce((acc, r) => acc + parseFloat(r.percentage), 0);
+      avg = Math.round(sum / results.length);
+      best = Math.max(...results.map(r => parseFloat(r.percentage)));
+    }
+    document.getElementById('stat-avg').textContent = `${avg}%`;
+    document.getElementById('stat-best').textContent = `${Math.round(best)}%`;
+
+    // Current Week (highest completed test + 1)
+    let currentWeek = 1;
+    if (results && results.length > 0) {
+      currentWeek = Math.max(...results.map(r => r.week_number)) + 1;
+    }
+    document.getElementById('stat-current').textContent = `Week ${Math.min(16, currentWeek)}`;
+
+    // Populate recent scores
+    const tbody = document.getElementById('recent-scores-tbody');
+    tbody.innerHTML = '';
+    if (!results || results.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--muted)">No tests completed yet. Available tests appear below.</td></tr>`;
+    } else {
+      // Show latest 5 tests
+      const sorted = [...results].sort((a,b) => b.week_number - a.week_number).slice(0, 5);
+      sorted.forEach(r => {
+        const win = windows ? windows.find(w => w.week_number === r.week_number) : null;
+        const topic = win ? win.test_title : `Week ${r.week_number} Test`;
+        const g = getGrade(r.percentage);
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="font-weight:700">Wk ${r.week_number}</td>
+          <td style="font-weight:600;color:#fff">${topic}</td>
+          <td>${r.score} / ${r.max_score}</td>
+          <td>${Math.round(r.percentage)}%</td>
+          <td><span class="badge ${g.class}">${g.label}</span></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Populate Available tests
+    const avContainer = document.getElementById('available-tests-container');
+    avContainer.innerHTML = '';
+    if (windows) {
+      const openWindows = windows.filter(w => w.is_open && (!results || !results.some(r => r.week_number === w.week_number)));
+      if (openWindows.length === 0) {
+        avContainer.innerHTML = `<p style="color:var(--muted);font-size:13px">All open tests have been completed, or no new tests have been opened by the admin.</p>`;
+      } else {
+        openWindows.forEach(w => {
+          const div = document.createElement('div');
+          div.className = 'test-status-card';
+          div.style.borderColor = 'rgba(56,189,248,0.2)';
+          div.innerHTML = `
+            <div class="test-status-info">
+              <h4>Week ${w.week_number}: ${w.test_title}</h4>
+              <p>${w.max_score} Marks · ${w.duration_min} Minutes · Status: Open</p>
+            </div>
+            <button class="btn-take-test" onclick="startTest(${w.week_number})">Take Test</button>
+          `;
+          avContainer.appendChild(div);
+        });
+      }
+    }
+  }
+
+  // ── LOAD TESTS INSIDE PHASES ──
+  async function loadPhaseTests(containerId, weekNumbers) {
+    const container = document.getElementById(`tests-${containerId}-container`);
+    container.innerHTML = '';
+
+    for (const wk of weekNumbers) {
+      const { data: windowInfo } = await _sb.from('test_windows').select('*').eq('week_number', wk).single();
+      const { data: resultInfo } = await _sb.from('test_results').select('*').eq('intern_id', currentSession.user.id).eq('week_number', wk).single();
+
+      const card = document.createElement('div');
+      card.className = 'test-status-card';
+
+      if (resultInfo) {
+        // Test already taken
+        const g = getGrade(resultInfo.percentage);
+        card.style.borderColor = 'rgba(52,211,153,0.2)';
+        card.innerHTML = `
+          <div class="test-status-info">
+            <h4>Week ${wk}: ${windowInfo.test_title}</h4>
+            <p>Score: ${resultInfo.score} / ${resultInfo.max_score} (${Math.round(resultInfo.percentage)}%)</p>
+          </div>
+          <span class="badge ${g.class}">Completed · Grade ${g.label}</span>
+        `;
+      } else if (windowInfo && windowInfo.is_open) {
+        // Open to take
+        card.style.borderColor = 'rgba(56,189,248,0.2)';
+        card.innerHTML = `
+          <div class="test-status-info">
+            <h4>Week ${wk}: ${windowInfo.test_title}</h4>
+            <p>${windowInfo.max_score} Marks · ${windowInfo.duration_min} min</p>
+          </div>
+          <button class="btn-take-test" onclick="startTest(${wk})">Take Test</button>
+        `;
+      } else {
+        // Locked
+        card.style.borderColor = 'rgba(255,255,255,0.05)';
+        card.innerHTML = `
+          <div class="test-status-info" style="opacity:0.5">
+            <h4>Week ${wk}: ${windowInfo ? windowInfo.test_title : 'Test Locked'}</h4>
+            <p>Not yet opened by admin</p>
+          </div>
+          <span style="font-size:13px;color:var(--muted)">🔒 Locked</span>
+        `;
+      }
+      container.appendChild(card);
+    }
+  }
+
+  // ── TAB: MY PROGRESS ──
+  async function loadProgressTab() {
+    const { data: results } = await _sb.from('test_results').select('*').eq('intern_id', currentSession.user.id);
+    const { data: windows } = await _sb.from('test_windows').select('*').order('week_number', { ascending: true });
+
+    // Header stats
+    let totalScore = 0;
+    let completedCount = results ? results.length : 0;
+    let highest = 0;
+    if (results && results.length > 0) {
+      totalScore = results.reduce((acc, r) => acc + parseFloat(r.percentage), 0);
+      highest = Math.max(...results.map(r => parseFloat(r.percentage)));
+    }
+    const avg = completedCount > 0 ? Math.round(totalScore / completedCount) : 0;
+    
+    document.getElementById('prog-overall-avg').textContent = `${avg}%`;
+    document.getElementById('prog-completed-count').textContent = `${completedCount} / 14`;
+    document.getElementById('prog-highest').textContent = `${Math.round(highest)}%`;
+
+    const tbody = document.getElementById('progress-table-rows');
+    tbody.innerHTML = '';
+
+    if (windows) {
+      windows.forEach(w => {
+        const result = results ? results.find(r => r.week_number === w.week_number) : null;
+        let status = '<span style="color:var(--muted)">🔒 Locked</span>';
+        let scoreStr = '-';
+        let pctStr = '-';
+        let gradeStr = '-';
+
+        if (result) {
+          const g = getGrade(result.percentage);
+          status = '<span style="color:var(--success)">Completed</span>';
+          scoreStr = `${result.score} / ${result.max_score}`;
+          pctStr = `${Math.round(result.percentage)}%`;
+          gradeStr = `<span class="badge ${g.class}">${g.label}</span>`;
+        } else if (w.is_open) {
+          status = `<span style="color:var(--primary);cursor:pointer;font-weight:600" onclick="startTest(${w.week_number})">Available ▶</span>`;
+        }
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="font-weight:700">Wk ${w.week_number}</td>
+          <td style="font-weight:600;color:#fff">${w.test_title}</td>
+          <td>${status}</td>
+          <td>${scoreStr}</td>
+          <td>${w.max_score}</td>
+          <td>${pctStr}</td>
+          <td>${gradeStr}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+  }
+
+  // ── TEST ENGINE (FULLSCREEN INTERACTIVE MODAL) ──
+  let quizQuestions = [];
+  let userAnswers = {};
+  let currentQIdx = 0;
+  let testWeek = null;
+  let timerInterval = null;
+  let timeRemainingSeconds = 0;
+
+  async function startTest(weekNum) {
+    const { data: windowInfo } = await _sb.from('test_windows').select('*').eq('week_number', weekNum).single();
+    const { data: qs } = await _sb.from('questions').select('*').eq('week_number', weekNum).order('sort_order', { ascending: true });
+
+    if (!qs || qs.length === 0) {
+      alert("No questions found in database for this week.");
+      return;
+    }
+
+    // Initialize Quiz variables
+    testWeek = weekNum;
+    quizQuestions = qs;
+    userAnswers = {};
+    currentQIdx = 0;
+    timeRemainingSeconds = windowInfo.duration_min * 60;
+
+    // Show Overlay
+    document.getElementById('modal-test-title').textContent = `Week ${weekNum} Test — ${windowInfo.test_title}`;
+    document.getElementById('testOverlay').style.display = 'flex';
+    document.body.style.overflow = 'hidden'; // Stop scrolling behind
+
+    // Start Timer
+    startTimer();
+    renderQuestion();
+  }
+
+  function startTimer() {
+    clearInterval(timerInterval);
+    const display = document.getElementById('timerDisplay');
+    
+    function updateDisplay() {
+      const mins = Math.floor(timeRemainingSeconds / 60).toString().padStart(2, '0');
+      const secs = (timeRemainingSeconds % 60).toString().padStart(2, '0');
+      display.textContent = `${mins}:${secs}`;
+
+      if (timeRemainingSeconds <= 0) {
+        clearInterval(timerInterval);
+        submitTestAnswers(true); // Force submit on timeout
+      }
+      timeRemainingSeconds--;
+    }
+    updateDisplay();
+    timerInterval = setInterval(updateDisplay, 1000);
+  }
+
+  function renderQuestion() {
+    const container = document.getElementById('testContainer');
+    const q = quizQuestions[currentQIdx];
+    const totalQ = quizQuestions.length;
+
+    container.innerHTML = `
+      <div class="test-q-num">Question ${currentQIdx + 1} of ${totalQ}</div>
+      <div class="test-q-text">${q.question_text}</div>
+      <div class="test-options">
+        <button class="test-option-btn ${userAnswers[q.id] === 'A' ? 'selected' : ''}" onclick="selectOption('${q.id}', 'A')">
+          <span class="test-option-label">A</span> ${q.option_a}
+        </button>
+        <button class="test-option-btn ${userAnswers[q.id] === 'B' ? 'selected' : ''}" onclick="selectOption('${q.id}', 'B')">
+          <span class="test-option-label">B</span> ${q.option_b}
+        </button>
+        <button class="test-option-btn ${userAnswers[q.id] === 'C' ? 'selected' : ''}" onclick="selectOption('${q.id}', 'C')">
+          <span class="test-option-label">C</span> ${q.option_c}
+        </button>
+        <button class="test-option-btn ${userAnswers[q.id] === 'D' ? 'selected' : ''}" onclick="selectOption('${q.id}', 'D')">
+          <span class="test-option-label">D</span> ${q.option_d}
+        </button>
+      </div>
+      <div class="test-footer">
+        <button class="btn-nav" id="btnPrev" onclick="navigateQ(-1)" ${currentQIdx === 0 ? 'disabled' : ''}>Previous</button>
+        <button class="btn-nav" id="btnNext" onclick="navigateQ(1)">
+          ${currentQIdx === totalQ - 1 ? 'Review' : 'Next'}
+        </button>
+      </div>
+    `;
+  }
+
+  function selectOption(qId, optionLetter) {
+    userAnswers[qId] = optionLetter;
+    renderQuestion();
+
+    // Auto advance after 400ms if not on the last question
+    if (currentQIdx < quizQuestions.length - 1) {
+      setTimeout(() => {
+        navigateQ(1);
+      }, 400);
+    }
+  }
+
+  function navigateQ(direction) {
+    const totalQ = quizQuestions.length;
+    
+    if (direction === 1 && currentQIdx === totalQ - 1) {
+      renderReviewScreen();
+      return;
+    }
+
+    currentQIdx = Math.max(0, Math.min(totalQ - 1, currentQIdx + direction));
+    renderQuestion();
+  }
+
+  function renderReviewScreen() {
+    const container = document.getElementById('testContainer');
+    container.innerHTML = `
+      <h3 style="font-size:18px;color:#fff;margin-bottom:16px">Review Your Answers</h3>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:24px">Make sure you have answered all questions. Unanswered questions count as incorrect.</p>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:32px">
+        ${quizQuestions.map((q, idx) => {
+          const ans = userAnswers[q.id];
+          return `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;border:1px solid var(--border);border-radius:8px">
+              <span style="font-size:13px;font-weight:600">Question ${idx + 1}</span>
+              <span style="font-weight:700;color:${ans ? 'var(--success)' : 'var(--danger)'}">
+                ${ans ? `Selected Option: ${ans}` : 'Unanswered'}
+              </span>
+            </div>
+          `;
+        }).join('')}
+      </div>
+      <div class="test-footer">
+        <button class="btn-nav" onclick="currentQIdx=0;renderQuestion()">Back to Questions</button>
+        <button class="btn-take-test" onclick="submitTestAnswers(false)" style="padding:12px 32px">Submit Test</button>
+      </div>
+    `;
+  }
+
+  async function submitTestAnswers(forced = false) {
+    clearInterval(timerInterval);
+
+    // Calculate score
+    let score = 0;
+    let maxScore = 0;
+    quizQuestions.forEach(q => {
+      maxScore += q.marks || 2;
+      if (userAnswers[q.id] === q.correct) {
+        score += q.marks || 2;
+      }
+    });
+
+    // Save to Database
+    const { error } = await _sb.from('test_results').insert({
+      intern_id: currentSession.user.id,
+      week_number: testWeek,
+      score: score,
+      max_score: maxScore,
+      answers: userAnswers
+    });
+
+    if (error) {
+      alert("Submission error: " + error.message);
+      // Close overlay anyway to prevent retaking/blocking
+      closeTestOverlay();
+      return;
+    }
+
+    // Show Results overlay
+    const container = document.getElementById('testContainer');
+    const pct = Math.round((score / maxScore) * 100);
+    const g = getGrade(pct);
+    
+    let motivationalText = "Keep studying to improve your scores next week!";
+    if (pct >= 85) motivationalText = "Fantastic! You are demonstrating excellent mastery! 🏆";
+    else if (pct >= 70) motivationalText = "Great job! Keep up the good work! 👍";
+    else if (pct >= 60) motivationalText = "You passed! Review lessons to strengthen gaps. 📖";
+
+    container.innerHTML = `
+      <div style="text-align:center;padding:40px 0">
+        <div style="font-size:56px;margin-bottom:12px">🎓</div>
+        <h2 style="font-size:24px;font-weight:800;color:#fff;margin-bottom:8px">Test Submitted Successfully!</h2>
+        <p style="color:var(--muted);font-size:14px;margin-bottom:32px">${forced ? 'Time expired. Your answers were auto-saved.' : 'Your answers have been graded.'}</p>
+        
+        <div style="background:rgba(255,255,255,0.01);border:1px solid var(--border);border-radius:16px;padding:32px;display:inline-block;min-width:280px;margin-bottom:32px">
+          <div style="font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase">Your Score</div>
+          <div style="font-size:48px;font-weight:900;color:#fff;margin-top:8px">${score} <span style="font-size:24px;color:var(--muted);font-weight:500">/ ${maxScore}</span></div>
+          <div style="font-size:18px;font-weight:700;color:var(--primary);margin-top:4px">${pct}%</div>
+          <div style="margin-top:16px"><span class="badge ${g.class}" style="font-size:12px;padding:6px 14px">Grade ${g.label}</span></div>
+        </div>
+
+        <p style="font-size:14px;color:var(--text);margin-bottom:40px;max-width:360px;margin-left:auto;margin-right:auto;line-height:1.5">${motivationalText}</p>
+        <button class="btn-primary" onclick="closeTestOverlay()" style="padding:12px 32px">Close test</button>
+      </div>
+    `;
+
+    document.getElementById('timerDisplay').style.display = 'none';
+  }
+
+  function closeTestOverlay() {
+    document.getElementById('testOverlay').style.display = 'none';
+    document.body.style.overflow = 'auto'; // Restore scrolling
+    document.getElementById('timerDisplay').style.display = 'block';
+    
+    // Refresh parent state
+    loadDashboard();
+    updateProgressTracker();
+    switchTab('dashboard');
+  }
+
+  async function internLogout() {
+    if (_sb) {
+      await _sb.auth.signOut();
+      window.location.href = '../index.html';
+    }
+  }
+</script>
+</body>
+</html>
