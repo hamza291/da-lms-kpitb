@@ -666,16 +666,11 @@
       email = email + '@lms.kpitb';
     }
 
-    const { data, error } = await _sb.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: name,
-          role: 'intern',
-          batch: batch
-        }
-      }
+    const { data, error } = await _sb.rpc('admin_create_intern', {
+      p_email: email,
+      p_password: password,
+      p_full_name: name,
+      p_batch: batch
     });
 
     if (error) {
