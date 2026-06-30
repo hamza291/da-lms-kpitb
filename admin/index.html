@@ -103,6 +103,8 @@
   .btn-toggle-active:hover { background:rgba(52,211,153,0.1); }
   .btn-toggle-inactive { border-color:rgba(248,113,113,0.2); color:var(--danger); }
   .btn-toggle-inactive:hover { background:rgba(248,113,113,0.1); }
+  .btn-reset-pw { border-color:rgba(167,139,250,0.2); color:var(--accent); margin-left:6px; }
+  .btn-reset-pw:hover { background:rgba(167,139,250,0.1); }
 
   .filter-row { display:flex; gap:16px; margin-bottom:20px; }
   .form-control {
@@ -110,6 +112,13 @@
     border-radius:8px; font-size:13px; min-width:160px; outline:none;
   }
   .form-control:focus { border-color:var(--primary); }
+
+  /* ALERT NOTICE BANNER */
+  .alert-banner {
+    background:rgba(251,146,60,0.06); border:1px solid rgba(251,146,60,0.2); border-radius:12px;
+    padding:16px 20px; margin-bottom:24px; font-size:13px; line-height:1.6; color:#fdba74;
+  }
+  .alert-banner strong { color:#fff; }
 
   /* MODAL */
   .modal-overlay {
@@ -125,8 +134,12 @@
   .modal-close { font-size:20px; color:var(--muted); cursor:pointer; border:none; background:transparent; }
   .modal-form-group { margin-bottom:16px; }
   .modal-form-group label { display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:6px; }
+  .input-wrapper { position:relative; }
   .modal-form-group input { width:100%; background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:8px; padding:10px 12px; color:#fff; font-size:14px; }
   .modal-form-group input:focus { outline:none; border-color:var(--primary); }
+  .password-toggle { position:absolute; right:12px; top:50%; transform:translateY(-50%); background:transparent; border:none; color:var(--muted); cursor:pointer; font-size:12px; font-weight:600; }
+  .password-toggle:hover { color:var(--text); }
+  
   .modal-footer { margin-top:24px; display:flex; justify-content:flex-end; gap:12px; }
   .btn-cancel { padding:10px 18px; border-radius:8px; background:rgba(255,255,255,0.05); color:var(--text); border:none; cursor:pointer; }
   .btn-cancel:hover { background:rgba(255,255,255,0.1); }
@@ -225,6 +238,10 @@
 
     <!-- TAB 2: INTERNS -->
     <div class="tab-pane" id="tab-interns">
+      <div class="alert-banner">
+        ⚙️ <strong>Trouble logging in?</strong> Make sure <strong>"Confirm email"</strong> is disabled in your Supabase Auth Settings (Supabase Dashboard ➔ Auth ➔ Providers ➔ Email ➔ Toggle "Confirm email" OFF). This allows temporary passwords to work immediately without email verification.
+      </div>
+      
       <div class="panel-card">
         <div class="panel-card-header">
           <h3>All Intern Accounts</h3>
@@ -234,7 +251,7 @@
           <thead>
             <tr>
               <th>Name</th>
-              <th>Email</th>
+              <th>Email Address</th>
               <th>Batch</th>
               <th>Enrollment Date</th>
               <th>Status</th>
@@ -366,8 +383,11 @@
       <input type="email" id="new-email" placeholder="ahmed@example.com" required>
     </div>
     <div class="modal-form-group">
-      <label>Password</label>
-      <input type="text" id="new-pw" placeholder="temporary_pass123" required>
+      <label>Temporary Password</label>
+      <div class="input-wrapper">
+        <input type="password" id="new-pw" placeholder="Min 6 characters" minlength="6" required>
+        <button type="button" class="password-toggle" onclick="togglePassVisibility('new-pw')">Show</button>
+      </div>
     </div>
     <div class="modal-form-group">
       <label>Batch</label>
@@ -386,22 +406,13 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-  // ── UPDATE THESE WITH YOUR SUPABASE KEYS ──
   const SUPABASE_URL = 'https://mrkpydwmdyiwqtjikhvb.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_yABcWZTw5N3nht8NQm0wRQ_H4cZgOf0';
 
-  let _sb = null;
-
-  if (SUPABASE_URL !== 'YOUR_SUPABASE_URL_HERE') {
-    _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-  }
+  const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   // Auth Protection
   window.addEventListener('load', async () => {
-    if (!_sb) {
-      alert("Please configure your SUPABASE_URL and SUPABASE_KEY in admin/index.html to use the Admin Panel.");
-      return;
-    }
     const { data: { session } } = await _sb.auth.getSession();
     if (!session) {
       window.location.href = '../index.html';
@@ -453,17 +464,26 @@
     if (tabId === 'tests') loadTests();
   }
 
+  function togglePassVisibility(inputId) {
+    const input = document.getElementById(inputId);
+    const btn = input.nextElementSibling;
+    if (input.type === 'password') {
+      input.type = 'text';
+      btn.textContent = 'Hide';
+    } else {
+      input.type = 'password';
+      btn.textContent = 'Show';
+    }
+  }
+
   // ── TAB 1: DASHBOARD ──
   async function loadDashboard() {
-    // Total interns
     const { data: interns } = await _sb.from('profiles').select('*').eq('role', 'intern');
     document.getElementById('stat-interns').textContent = interns ? interns.length : 0;
 
-    // Test results
     const { data: results } = await _sb.from('test_results').select('*');
     document.getElementById('stat-completed').textContent = results ? results.length : 0;
 
-    // Average Score
     let avg = 0;
     if (results && results.length > 0) {
       const sum = results.reduce((acc, r) => acc + parseFloat(r.percentage), 0);
@@ -471,7 +491,6 @@
     }
     document.getElementById('stat-avg').textContent = `${avg}%`;
 
-    // Needs attention
     let attention = 0;
     const attentionIds = new Set();
     if (results) {
@@ -482,7 +501,6 @@
     }
     document.getElementById('stat-attention').textContent = attention;
 
-    // Load recent activity rows
     const tbody = document.getElementById('dashboard-activity-rows');
     tbody.innerHTML = '';
 
@@ -531,13 +549,16 @@
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td style="font-weight:600;color:#fff">${intern.full_name}</td>
-        <td style="font-family:'JetBrains Mono',monospace;font-size:11px">${intern.id}</td>
+        <td style="font-family:'JetBrains Mono',monospace">${intern.email || 'N/A'}</td>
         <td>${intern.batch}</td>
         <td>${dateStr}</td>
         <td><span class="badge ${intern.is_active ? 'badge-active' : 'badge-inactive'}">${intern.is_active ? 'Active' : 'Inactive'}</span></td>
         <td>
           <button class="btn-action ${intern.is_active ? 'btn-toggle-inactive' : 'btn-toggle-active'}" onclick="toggleInternStatus('${intern.id}', ${intern.is_active})">
             ${intern.is_active ? 'Deactivate' : 'Activate'}
+          </button>
+          <button class="btn-action btn-reset-pw" onclick="sendPasswordReset('${intern.email}')" ${!intern.email ? 'disabled' : ''}>
+            Reset Link
           </button>
         </td>
       `;
@@ -555,10 +576,23 @@
     }
   }
 
+  async function sendPasswordReset(email) {
+    const { error } = await _sb.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/index.html' // Sends recovery token
+    });
+    if (error) {
+      showToast(error.message, 'danger');
+    } else {
+      showToast(`Password recovery email successfully sent to ${email}!`);
+    }
+  }
+
   function openCreateModal() {
     document.getElementById('new-name').value = '';
     document.getElementById('new-email').value = '';
     document.getElementById('new-pw').value = Math.random().toString(36).slice(-8); // Random temp pw
+    document.getElementById('new-pw').type = 'password';
+    document.querySelector('#new-pw + button').textContent = 'Show';
     document.getElementById('createModal').style.display = 'flex';
   }
 
@@ -577,7 +611,11 @@
       return;
     }
 
-    // Call Supabase signup
+    if (password.length < 6) {
+      showToast('Password must be at least 6 characters long.', 'danger');
+      return;
+    }
+
     const { data, error } = await _sb.auth.signUp({
       email,
       password,
@@ -606,7 +644,6 @@
     const weekVal = document.getElementById('perf-week-filter').value;
     const batchVal = document.getElementById('perf-batch-filter').value;
 
-    // Fill batch dropdown
     const { data: batches } = await _sb.from('profiles').select('batch').eq('role', 'intern');
     const batchSelect = document.getElementById('perf-batch-filter');
     const prevVal = batchSelect.value;
@@ -622,7 +659,6 @@
     }
     batchSelect.value = prevVal;
 
-    // Load table results
     let query = _sb.from('test_results').select(`
       id,
       week_number,
@@ -646,7 +682,6 @@
       return;
     }
 
-    // Filter by batch client-side (to avoid complex RLS/joins queries)
     let filteredResults = results;
     if (batchVal !== 'all') {
       filteredResults = results.filter(r => r.profiles && r.profiles.batch === batchVal);
@@ -675,7 +710,6 @@
       tbody.appendChild(tr);
     });
 
-    // Populate chart
     buildPerformanceChart(filteredResults);
   }
 
@@ -872,10 +906,8 @@
   }
 
   async function adminLogout() {
-    if (_sb) {
-      await _sb.auth.signOut();
-      window.location.href = '../index.html';
-    }
+    await _sb.auth.signOut();
+    window.location.href = '../index.html';
   }
 </script>
 </body>

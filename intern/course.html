@@ -158,6 +158,21 @@
   .stat-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:20px; }
   .stat-card h4 { font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; }
   .stat-card p { font-size:24px; font-weight:800; color:#fff; margin-top:6px; }
+
+  /* RESILIENT TEST ALERT BANNER */
+  .resume-alert { display:none; align-items:center; justify-content:space-between; background:rgba(251,146,60,0.08); border:1px solid rgba(251,146,60,0.25); border-radius:12px; padding:16px 20px; margin-bottom:24px; color:#fdba74; font-size:13px; }
+
+  /* SETTINGS FORM STYLES */
+  .form-group { margin-bottom:16px; }
+  .form-group label { display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px; }
+  .input-wrapper { position:relative; }
+  .form-control { width:100%; background:rgba(255,255,255,0.02); border:1px solid var(--border); border-radius:8px; padding:10px 14px; color:#fff; font-size:13px; outline:none; }
+  .form-control:focus { border-color:var(--primary); }
+  .password-toggle { position:absolute; right:12px; top:50%; transform:translateY(-50%); background:transparent; border:none; color:var(--muted); cursor:pointer; font-size:12px; font-weight:600; }
+  .password-toggle:hover { color:var(--text); }
+  .btn-submit { background:linear-gradient(135deg, var(--primary), var(--accent)); color:#000; font-weight:700; font-size:13px; padding:10px 20px; border:none; border-radius:8px; cursor:pointer; transition:all 0.2s; margin-top:8px; }
+  .btn-submit:hover { transform:translateY(-1px); box-shadow:0 6px 16px rgba(56,189,248,0.25); }
+  .btn-submit:disabled { opacity:0.5; cursor:not-allowed; }
 </style>
 </head>
 <body>
@@ -179,8 +194,9 @@
     <div class="nav-item" onclick="switchTab('p6')" id="nav-p6">🐍 Phase 6: Python & Pandas</div>
     <div class="nav-item" onclick="switchTab('p7')" id="nav-p7">📈 Phase 7: Visualization</div>
     <div class="nav-item" onclick="switchTab('p8')" id="nav-p8">🏆 Phase 8: Capstone Project</div>
-    <div class="nav-label">Performance</div>
+    <div class="nav-label">Account</div>
     <div class="nav-item" onclick="switchTab('progress')" id="nav-progress">📊 My Progress</div>
+    <div class="nav-item" onclick="switchTab('settings')" id="nav-settings">⚙️ Settings</div>
   </nav>
   <div class="sidebar-footer">
     <div class="progress-label"><span>Course Progress</span><span id="sidebar-progress-pct">0%</span></div>
@@ -195,6 +211,12 @@
     
     <!-- DASHBOARD -->
     <div class="tab-pane active" id="tab-dashboard">
+      <!-- Unfinished quiz alert -->
+      <div class="resume-alert" id="quizResumeAlert">
+        <span>⚠️ <strong>Unfinished Quiz Session:</strong> You have an incomplete quiz session for Week <span id="alertWeekNum">1</span>.</span>
+        <button class="btn-take-test" onclick="resumeSavedQuiz()" style="font-size:12px;padding:6px 14px">Resume Session</button>
+      </div>
+
       <div class="welcome-card">
         <h2>Welcome back! 👋</h2>
         <p>KPITB Data Analytics Internship Program · 2026</p>
@@ -214,7 +236,7 @@
             <tr><th>Week</th><th>Test Topic</th><th>Score</th><th>Percentage</th><th>Grade</th></tr>
           </thead>
           <tbody id="recent-scores-tbody">
-            <tr><td colspan="5" style="text-align:center;color:var(--muted)">No tests taken yet.</td></tr>
+            <tr><td colspan="5" style="text-align:center;color:var(--muted)">No tests taken yet. Available tests appear below.</td></tr>
           </tbody>
         </table>
       </div>
@@ -602,6 +624,36 @@ dept_avg = df.groupby("Dept")["Salary"].mean()
       </div>
     </div>
 
+    <!-- SETTINGS -->
+    <div class="tab-pane" id="tab-settings">
+      <div class="phase-header">
+        <h2>Account Settings</h2>
+        <p>Manage your account security and password.</p>
+      </div>
+
+      <div class="panel-card" style="max-width:480px">
+        <h3>Change Password</h3>
+        
+        <div id="settingsError" style="display:none;padding:12px;background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.2);color:var(--danger);font-size:13px;border-radius:8px;margin-bottom:16px"></div>
+        <div id="settingsSuccess" style="display:none;padding:12px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.2);color:var(--success);font-size:13px;border-radius:8px;margin-bottom:16px"></div>
+
+        <form id="changePasswordForm">
+          <div class="form-group">
+            <label for="settingsPassword">New Password</label>
+            <div class="input-wrapper">
+              <input type="password" id="settingsPassword" class="form-control" placeholder="Min 6 characters" minlength="6" required>
+              <button type="button" class="password-toggle" onclick="togglePassVisibility('settingsPassword')">Show</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="settingsConfirmPassword">Confirm New Password</label>
+            <input type="password" id="settingsConfirmPassword" class="form-control" placeholder="Repeat new password" minlength="6" required>
+          </div>
+          <button type="submit" class="btn-submit" id="btnUpdatePassword">Update Password</button>
+        </form>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -619,24 +671,15 @@ dept_avg = df.groupby("Dept")["Salary"].mean()
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  // ── UPDATE THESE WITH YOUR SUPABASE KEYS ──
   const SUPABASE_URL = 'https://mrkpydwmdyiwqtjikhvb.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_yABcWZTw5N3nht8NQm0wRQ_H4cZgOf0';
 
-  let _sb = null;
+  const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   let currentSession = null;
   let currentProfile = null;
 
-  if (SUPABASE_URL !== 'YOUR_SUPABASE_URL_HERE') {
-    _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-  }
-
   // Auth checking
   window.addEventListener('load', async () => {
-    if (!_sb) {
-      alert("Please configure your SUPABASE_URL and SUPABASE_KEY in intern/course.html to view the Intern Portal.");
-      return;
-    }
     const { data: { session } } = await _sb.auth.getSession();
     if (!session) {
       window.location.href = '../index.html';
@@ -653,6 +696,9 @@ dept_avg = df.groupby("Dept")["Salary"].mean()
 
     document.getElementById('intern-name').textContent = profile.full_name;
 
+    // Check for saved quiz resiliency
+    checkSavedQuizSession();
+
     // Load initial portal views
     loadDashboard();
     updateProgressTracker();
@@ -666,8 +712,16 @@ dept_avg = df.groupby("Dept")["Salary"].mean()
     document.getElementById(`tab-${tabId}`).classList.add('active');
     document.getElementById(`nav-${tabId}`).classList.add('active');
 
-    if (tabId === 'dashboard') loadDashboard();
+    if (tabId === 'dashboard') {
+      checkSavedQuizSession();
+      loadDashboard();
+    }
     if (tabId === 'progress') loadProgressTab();
+    if (tabId === 'settings') {
+      document.getElementById('settingsError').style.display = 'none';
+      document.getElementById('settingsSuccess').style.display = 'none';
+      document.getElementById('changePasswordForm').reset();
+    }
     
     // For Phase tabs, load their specific week test statuses
     const phaseMappings = { p1: [1, 2], p2: [3, 4], p3: [5, 6], p4: [7, 8], p5: [9, 10], p6: [11, 12], p7: [13, 14], p8: [15, 16] };
@@ -682,6 +736,18 @@ dept_avg = df.groupby("Dept")["Salary"].mean()
     header.parentElement.classList.toggle('open');
   }
 
+  function togglePassVisibility(inputId) {
+    const input = document.getElementById(inputId);
+    const btn = input.nextElementSibling;
+    if (input.type === 'password') {
+      input.type = 'text';
+      btn.textContent = 'Hide';
+    } else {
+      input.type = 'password';
+      btn.textContent = 'Show';
+    }
+  }
+
   function getGrade(pct) {
     if (pct >= 85) return { label: 'A', class: 'badge-gold' };
     if (pct >= 70) return { label: 'B', class: 'badge-green' };
@@ -694,7 +760,7 @@ dept_avg = df.groupby("Dept")["Salary"].mean()
   async function updateProgressTracker() {
     const { data: results } = await _sb.from('test_results').select('*').eq('intern_id', currentSession.user.id);
     const count = results ? results.length : 0;
-    const total = 14; // Auto-graded weeks (1-14)
+    const total = 14; 
     const pct = Math.min(100, Math.round((count / total) * 100));
 
     document.getElementById('sidebar-progress-pct').textContent = `${pct}%`;
@@ -709,7 +775,6 @@ dept_avg = df.groupby("Dept")["Salary"].mean()
     const completed = results ? results.length : 0;
     document.getElementById('stat-completed').textContent = `${completed} / 14`;
 
-    // Average Score
     let avg = 0;
     let best = 0;
     if (results && results.length > 0) {
@@ -720,7 +785,6 @@ dept_avg = df.groupby("Dept")["Salary"].mean()
     document.getElementById('stat-avg').textContent = `${avg}%`;
     document.getElementById('stat-best').textContent = `${Math.round(best)}%`;
 
-    // Current Week (highest completed test + 1)
     let currentWeek = 1;
     if (results && results.length > 0) {
       currentWeek = Math.max(...results.map(r => r.week_number)) + 1;
@@ -733,7 +797,6 @@ dept_avg = df.groupby("Dept")["Salary"].mean()
     if (!results || results.length === 0) {
       tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--muted)">No tests completed yet. Available tests appear below.</td></tr>`;
     } else {
-      // Show latest 5 tests
       const sorted = [...results].sort((a,b) => b.week_number - a.week_number).slice(0, 5);
       sorted.forEach(r => {
         const win = windows ? windows.find(w => w.week_number === r.week_number) : null;
@@ -790,7 +853,6 @@ dept_avg = df.groupby("Dept")["Salary"].mean()
       card.className = 'test-status-card';
 
       if (resultInfo) {
-        // Test already taken
         const g = getGrade(resultInfo.percentage);
         card.style.borderColor = 'rgba(52,211,153,0.2)';
         card.innerHTML = `
@@ -801,7 +863,6 @@ dept_avg = df.groupby("Dept")["Salary"].mean()
           <span class="badge ${g.class}">Completed · Grade ${g.label}</span>
         `;
       } else if (windowInfo && windowInfo.is_open) {
-        // Open to take
         card.style.borderColor = 'rgba(56,189,248,0.2)';
         card.innerHTML = `
           <div class="test-status-info">
@@ -811,7 +872,6 @@ dept_avg = df.groupby("Dept")["Salary"].mean()
           <button class="btn-take-test" onclick="startTest(${wk})">Take Test</button>
         `;
       } else {
-        // Locked
         card.style.borderColor = 'rgba(255,255,255,0.05)';
         card.innerHTML = `
           <div class="test-status-info" style="opacity:0.5">
@@ -830,7 +890,6 @@ dept_avg = df.groupby("Dept")["Salary"].mean()
     const { data: results } = await _sb.from('test_results').select('*').eq('intern_id', currentSession.user.id);
     const { data: windows } = await _sb.from('test_windows').select('*').order('week_number', { ascending: true });
 
-    // Header stats
     let totalScore = 0;
     let completedCount = results ? results.length : 0;
     let highest = 0;
@@ -880,13 +939,62 @@ dept_avg = df.groupby("Dept")["Salary"].mean()
     }
   }
 
-  // ── TEST ENGINE (FULLSCREEN INTERACTIVE MODAL) ──
+  // ── CHANGE PASSWORD SUBMIT ──
+  const changePasswordForm = document.getElementById('changePasswordForm');
+  changePasswordForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const pw = document.getElementById('settingsPassword').value;
+    const confirmPw = document.getElementById('settingsConfirmPassword').value;
+    const errEl = document.getElementById('settingsError');
+    const succEl = document.getElementById('settingsSuccess');
+    const btn = document.getElementById('btnUpdatePassword');
+
+    errEl.style.display = 'none';
+    succEl.style.display = 'none';
+
+    if (pw !== confirmPw) {
+      errEl.textContent = "Passwords do not match.";
+      errEl.style.display = 'block';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = "Updating...";
+
+    try {
+      const { error } = await _sb.auth.updateUser({ password: pw });
+      if (error) throw error;
+      succEl.textContent = "Password updated successfully!";
+      succEl.style.display = 'block';
+      changePasswordForm.reset();
+    } catch (err) {
+      errEl.textContent = err.message || "Failed to update password.";
+      errEl.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Update Password";
+    }
+  });
+
+  // ── TEST ENGINE (FULLSCREEN INTERACTIVE MODAL WITH LOCALSTORAGE RESILIENCY) ──
   let quizQuestions = [];
   let userAnswers = {};
   let currentQIdx = 0;
   let testWeek = null;
   let timerInterval = null;
   let timeRemainingSeconds = 0;
+
+  function checkSavedQuizSession() {
+    const savedWeek = localStorage.getItem('active_quiz_week');
+    const alertBanner = document.getElementById('quizResumeAlert');
+    
+    if (savedWeek) {
+      document.getElementById('alertWeekNum').textContent = savedWeek;
+      alertBanner.style.display = 'flex';
+    } else {
+      alertBanner.style.display = 'none';
+    }
+  }
 
   async function startTest(weekNum) {
     const { data: windowInfo } = await _sb.from('test_windows').select('*').eq('week_number', weekNum).single();
@@ -897,19 +1005,42 @@ dept_avg = df.groupby("Dept")["Salary"].mean()
       return;
     }
 
-    // Initialize Quiz variables
+    // Init Quiz variables
     testWeek = weekNum;
     quizQuestions = qs;
     userAnswers = {};
     currentQIdx = 0;
     timeRemainingSeconds = windowInfo.duration_min * 60;
 
-    // Show Overlay
-    document.getElementById('modal-test-title').textContent = `Week ${weekNum} Test — ${windowInfo.test_title}`;
-    document.getElementById('testOverlay').style.display = 'flex';
-    document.body.style.overflow = 'hidden'; // Stop scrolling behind
+    // Save initial state to LocalStorage
+    localStorage.setItem('active_quiz_week', weekNum);
+    localStorage.setItem(`quiz_answers_wk_${weekNum}`, JSON.stringify(userAnswers));
+    localStorage.setItem(`quiz_time_wk_${weekNum}`, timeRemainingSeconds);
+    localStorage.setItem(`quiz_qidx_wk_${weekNum}`, currentQIdx);
 
-    // Start Timer
+    openQuizUI(windowInfo.test_title);
+  }
+
+  async function resumeSavedQuiz() {
+    const weekNum = parseInt(localStorage.getItem('active_quiz_week'));
+    if (!weekNum) return;
+
+    const { data: windowInfo } = await _sb.from('test_windows').select('*').eq('week_number', weekNum).single();
+    const { data: qs } = await _sb.from('questions').select('*').eq('week_number', weekNum).order('sort_order', { ascending: true });
+
+    testWeek = weekNum;
+    quizQuestions = qs;
+    userAnswers = JSON.parse(localStorage.getItem(`quiz_answers_wk_${weekNum}`)) || {};
+    currentQIdx = parseInt(localStorage.getItem(`quiz_qidx_wk_${weekNum}`)) || 0;
+    timeRemainingSeconds = parseInt(localStorage.getItem(`quiz_time_wk_${weekNum}`)) || (windowInfo.duration_min * 60);
+
+    openQuizUI(windowInfo.test_title);
+  }
+
+  function openQuizUI(testTitle) {
+    document.getElementById('modal-test-title').textContent = `Week ${testWeek} Test — ${testTitle}`;
+    document.getElementById('testOverlay').style.display = 'flex';
+    document.body.style.overflow = 'hidden'; 
     startTimer();
     renderQuestion();
   }
@@ -923,9 +1054,12 @@ dept_avg = df.groupby("Dept")["Salary"].mean()
       const secs = (timeRemainingSeconds % 60).toString().padStart(2, '0');
       display.textContent = `${mins}:${secs}`;
 
+      // Save time backup
+      localStorage.setItem(`quiz_time_wk_${testWeek}`, timeRemainingSeconds);
+
       if (timeRemainingSeconds <= 0) {
         clearInterval(timerInterval);
-        submitTestAnswers(true); // Force submit on timeout
+        submitTestAnswers(true); 
       }
       timeRemainingSeconds--;
     }
@@ -937,6 +1071,9 @@ dept_avg = df.groupby("Dept")["Salary"].mean()
     const container = document.getElementById('testContainer');
     const q = quizQuestions[currentQIdx];
     const totalQ = quizQuestions.length;
+
+    // Backup current idx
+    localStorage.setItem(`quiz_qidx_wk_${testWeek}`, currentQIdx);
 
     container.innerHTML = `
       <div class="test-q-num">Question ${currentQIdx + 1} of ${totalQ}</div>
@@ -966,9 +1103,12 @@ dept_avg = df.groupby("Dept")["Salary"].mean()
 
   function selectOption(qId, optionLetter) {
     userAnswers[qId] = optionLetter;
+    
+    // Backup answers state
+    localStorage.setItem(`quiz_answers_wk_${testWeek}`, JSON.stringify(userAnswers));
+    
     renderQuestion();
 
-    // Auto advance after 400ms if not on the last question
     if (currentQIdx < quizQuestions.length - 1) {
       setTimeout(() => {
         navigateQ(1);
@@ -1016,7 +1156,6 @@ dept_avg = df.groupby("Dept")["Salary"].mean()
   async function submitTestAnswers(forced = false) {
     clearInterval(timerInterval);
 
-    // Calculate score
     let score = 0;
     let maxScore = 0;
     quizQuestions.forEach(q => {
@@ -1026,7 +1165,6 @@ dept_avg = df.groupby("Dept")["Salary"].mean()
       }
     });
 
-    // Save to Database
     const { error } = await _sb.from('test_results').insert({
       intern_id: currentSession.user.id,
       week_number: testWeek,
@@ -1035,14 +1173,18 @@ dept_avg = df.groupby("Dept")["Salary"].mean()
       answers: userAnswers
     });
 
+    // Clear local storage backups
+    localStorage.removeItem('active_quiz_week');
+    localStorage.removeItem(`quiz_answers_wk_${testWeek}`);
+    localStorage.removeItem(`quiz_time_wk_${testWeek}`);
+    localStorage.removeItem(`quiz_qidx_wk_${testWeek}`);
+
     if (error) {
       alert("Submission error: " + error.message);
-      // Close overlay anyway to prevent retaking/blocking
       closeTestOverlay();
       return;
     }
 
-    // Show Results overlay
     const container = document.getElementById('testContainer');
     const pct = Math.round((score / maxScore) * 100);
     const g = getGrade(pct);
@@ -1075,20 +1217,17 @@ dept_avg = df.groupby("Dept")["Salary"].mean()
 
   function closeTestOverlay() {
     document.getElementById('testOverlay').style.display = 'none';
-    document.body.style.overflow = 'auto'; // Restore scrolling
+    document.body.style.overflow = 'auto'; 
     document.getElementById('timerDisplay').style.display = 'block';
     
-    // Refresh parent state
     loadDashboard();
     updateProgressTracker();
     switchTab('dashboard');
   }
 
   async function internLogout() {
-    if (_sb) {
-      await _sb.auth.signOut();
-      window.location.href = '../index.html';
-    }
+    await _sb.auth.signOut();
+    window.location.href = '../index.html';
   }
 </script>
 </body>

@@ -1,5 +1,5 @@
 -- ════════════════════════════════════════════════════════════════
---  DA Internship LMS — Supabase Database Setup
+--  DA Internship LMS — Supabase Database Setup (Updated)
 --  Copy this entire file and paste into:
 --  Supabase Dashboard → SQL Editor → New Query → Run
 -- ════════════════════════════════════════════════════════════════
@@ -7,6 +7,7 @@
 -- ── 1. PROFILES (extends Supabase auth.users) ──────────────────
 CREATE TABLE IF NOT EXISTS public.profiles (
   id          UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+  email       TEXT,
   full_name   TEXT NOT NULL,
   role        TEXT NOT NULL DEFAULT 'intern' CHECK (role IN ('admin','intern')),
   batch       TEXT DEFAULT 'Batch 2026',
@@ -55,32 +56,43 @@ CREATE TABLE IF NOT EXISTS public.questions (
 );
 
 -- ════════════════════════════════════════════════════════════════
---  ROW LEVEL SECURITY
+--  ROW LEVEL SECURITY & RECURSION BYPASS FUNCTION
 -- ════════════════════════════════════════════════════════════════
 ALTER TABLE public.profiles     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.test_windows ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.test_results ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.questions    ENABLE ROW LEVEL SECURITY;
 
--- profiles
+-- Create helper function to check admin role without causing RLS recursion
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'admin'
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+-- Profiles Policies
 CREATE POLICY "Users can read own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
-CREATE POLICY "Admin reads all profiles"   ON public.profiles FOR SELECT USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'));
-CREATE POLICY "Admin manages profiles"     ON public.profiles FOR ALL    USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'));
+CREATE POLICY "Admin reads all profiles"   ON public.profiles FOR SELECT USING (public.is_admin());
+CREATE POLICY "Admin manages all profiles" ON public.profiles FOR ALL    USING (public.is_admin());
 CREATE POLICY "Users insert own profile"   ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
--- test_windows
+-- Test Windows Policies
 CREATE POLICY "Everyone reads test windows" ON public.test_windows FOR SELECT USING (true);
-CREATE POLICY "Admin manages test windows"  ON public.test_windows FOR ALL USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'));
+CREATE POLICY "Admin manages test windows"  ON public.test_windows FOR ALL    USING (public.is_admin());
 
--- test_results
+-- Test Results Policies
 CREATE POLICY "Interns read own results"  ON public.test_results FOR SELECT USING (intern_id = auth.uid());
 CREATE POLICY "Interns submit results"    ON public.test_results FOR INSERT WITH CHECK (intern_id = auth.uid());
-CREATE POLICY "Admin reads all results"   ON public.test_results FOR SELECT USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'));
-CREATE POLICY "Admin manages results"     ON public.test_results FOR ALL    USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'));
+CREATE POLICY "Admin reads all results"   ON public.test_results FOR SELECT USING (public.is_admin());
+CREATE POLICY "Admin manages results"     ON public.test_results FOR ALL    USING (public.is_admin());
 
--- questions
+-- Questions Policies
 CREATE POLICY "Everyone reads questions"  ON public.questions FOR SELECT USING (true);
-CREATE POLICY "Admin manages questions"   ON public.questions FOR ALL USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'));
+CREATE POLICY "Admin manages questions"   ON public.questions FOR ALL    USING (public.is_admin());
 
 -- ════════════════════════════════════════════════════════════════
 --  AUTO-CREATE PROFILE AFTER SIGNUP (trigger)
@@ -88,14 +100,15 @@ CREATE POLICY "Admin manages questions"   ON public.questions FOR ALL USING (EXI
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, full_name, role, batch)
+  INSERT INTO public.profiles (id, email, full_name, role, batch)
   VALUES (
     NEW.id,
+    NEW.email,
     COALESCE(NEW.raw_user_meta_data->>'full_name', 'Unknown'),
     COALESCE(NEW.raw_user_meta_data->>'role', 'intern'),
     COALESCE(NEW.raw_user_meta_data->>'batch', 'Batch 2026')
   )
-  ON CONFLICT (id) DO NOTHING;
+  ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, full_name = EXCLUDED.full_name, batch = EXCLUDED.batch;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -191,7 +204,7 @@ INSERT INTO public.questions (week_number,question_text,option_a,option_b,option
 INSERT INTO public.questions (week_number,question_text,option_a,option_b,option_c,option_d,correct,marks,sort_order) VALUES
 (8,'ETL stands for:','Extract, Transfer, Load','Extract, Transform, Load','Evaluate, Test, Launch','Explore, Transform, Locate','B',2,1),
 (8,'Salary is missing because high earners refused to report it. This is:','MCAR','MAR','MNAR','Complete data','C',2,2),
-(8,'Z-score outlier threshold (common rule): flag values with |Z| >','1','2','3','0','C',2,3),
+(8,'Z-score outlier threshold (common rule): flag values with |Z| greater than:','1','2','3','0.5','C',2,3),
 (8,'"Append Queries" in Power Query is equivalent to SQL:','JOIN','UNION','SELECT','WHERE','B',2,4),
 (8,'Best imputation for a right-skewed column with missing values:','Mean','Median','Mode','Zero','B',2,5);
 
