@@ -357,7 +357,16 @@
       if (error) throw error;
       redirectUser(data.user.id);
     } catch (err) {
-      showStatus('loginError', err.message || 'Login failed. Please check your credentials.', 'error');
+      console.error('Login error:', err);
+      let errMsg = err.message || 'Login failed. Please check your credentials.';
+      
+      // If error stringifies to empty object or fetch failure, print descriptive diagnostic
+      const strErr = JSON.stringify(err);
+      if (strErr === '{}' || errMsg.includes('Failed to fetch') || errMsg.includes('fetch')) {
+        errMsg = 'Connection to database failed. Please ensure your Ad Blocker (e.g. AdBlocker by STANDS in your browser) is disabled for this site, as it blocks Supabase requests.';
+      }
+      
+      showStatus('loginError', errMsg, 'error');
       setLoading('btnLoginSubmit', 'loginSpinner', 'loginBtnText', 'Sign In', false);
     }
   });
