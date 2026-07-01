@@ -413,6 +413,31 @@
   </div>
 </div>
 
+<!-- SET PASSWORD MODAL -->
+<div class="modal-overlay" id="setPasswordModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Set Intern Password</h3>
+      <button class="modal-close" onclick="closeSetPasswordModal()">×</button>
+    </div>
+    <div style="font-size:13px; color:var(--muted); margin-bottom:16px;">
+      Setting a new password for: <strong id="reset-pw-name" style="color:var(--text)"></strong>
+    </div>
+    <input type="hidden" id="reset-pw-uid">
+    <div class="modal-form-group">
+      <label>New Password</label>
+      <div class="input-wrapper">
+        <input type="password" id="reset-pw-input" placeholder="Min 6 characters" minlength="6" required>
+        <button type="button" class="password-toggle" onclick="togglePassVisibility('reset-pw-input')">Show</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeSetPasswordModal()">Cancel</button>
+      <button class="btn-primary" onclick="submitResetPassword()">Update Password</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST CONTAINER -->
 <div id="toast-container"></div>
 
@@ -604,8 +629,11 @@
           <button class="btn-action ${intern.is_active ? 'btn-toggle-inactive' : 'btn-toggle-active'}" onclick="toggleInternStatus('${intern.id}', ${intern.is_active})">
             ${intern.is_active ? 'Deactivate' : 'Activate'}
           </button>
-          <button class="btn-action btn-reset-pw" onclick="sendPasswordReset('${intern.email}')" ${(!intern.email || isInternal) ? 'disabled title="Cannot send reset link to a username"' : ''}>
-            Reset Link
+          <button class="btn-action" onclick="openResetPasswordModal('${intern.id}', '${intern.full_name}')" style="border-color:rgba(30,64,175,0.2); color:var(--primary); margin-left:4px;">
+            Set PW
+          </button>
+          <button class="btn-action" onclick="confirmDeleteIntern('${intern.id}', '${intern.full_name}')" style="border-color:rgba(185,28,28,0.2); color:var(--danger); margin-left:4px;">
+            Delete
           </button>
         </td>
       `;
@@ -645,6 +673,56 @@
 
   function closeCreateModal() {
     document.getElementById('createModal').style.display = 'none';
+  }
+
+  function openResetPasswordModal(userId, name) {
+    document.getElementById('reset-pw-uid').value = userId;
+    document.getElementById('reset-pw-name').textContent = name;
+    document.getElementById('reset-pw-input').value = '';
+    document.getElementById('reset-pw-input').type = 'password';
+    document.querySelector('#reset-pw-input + button').textContent = 'Show';
+    document.getElementById('setPasswordModal').style.display = 'flex';
+  }
+
+  function closeSetPasswordModal() {
+    document.getElementById('setPasswordModal').style.display = 'none';
+  }
+
+  async function submitResetPassword() {
+    const userId = document.getElementById('reset-pw-uid').value;
+    const newPassword = document.getElementById('reset-pw-input').value;
+
+    if (!newPassword || newPassword.length < 6) {
+      showToast('Password must be at least 6 characters long.', 'danger');
+      return;
+    }
+
+    const { data, error } = await _sb.rpc('admin_reset_intern_password', {
+      p_user_id: userId,
+      p_new_password: newPassword
+    });
+
+    if (error) {
+      showToast(error.message, 'danger');
+    } else {
+      showToast('Password successfully updated!');
+      closeSetPasswordModal();
+    }
+  }
+
+  async function confirmDeleteIntern(userId, name) {
+    if (confirm(`Are you absolutely sure you want to permanently delete intern "${name}"? This will delete their profile, submissions, and credentials, and cannot be undone.`)) {
+      const { data, error } = await _sb.rpc('admin_delete_intern', {
+        p_user_id: userId
+      });
+
+      if (error) {
+        showToast(error.message, 'danger');
+      } else {
+        showToast(`Intern "${name}" has been deleted.`);
+        loadInterns();
+      }
+    }
   }
 
   async function submitCreateIntern() {
